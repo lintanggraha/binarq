@@ -14,22 +14,27 @@ class AppTheme {
         surface: AppColors.surface,
       ),
       scaffoldBackgroundColor: AppColors.background,
-      
+
       // Typography
       textTheme: TextTheme(
         // Judul pakai Fredoka One
         displayLarge: GoogleFonts.fredoka(color: AppColors.textDark),
         displayMedium: GoogleFonts.fredoka(color: AppColors.textDark),
         headlineLarge: GoogleFonts.fredoka(color: AppColors.textDark),
-        titleLarge: GoogleFonts.fredoka(color: AppColors.textDark, fontSize: 22),
-        titleMedium: GoogleFonts.fredoka(color: AppColors.textDark, fontSize: 18),
-        
+        titleLarge:
+            GoogleFonts.fredoka(color: AppColors.textDark, fontSize: 22),
+        titleMedium:
+            GoogleFonts.fredoka(color: AppColors.textDark, fontSize: 18),
+
         // Body teks (Soal) pakai Nunito
-        bodyLarge: GoogleFonts.nunito(color: AppColors.textDark, fontSize: 18, fontWeight: FontWeight.w600),
+        bodyLarge: GoogleFonts.nunito(
+            color: AppColors.textDark,
+            fontSize: 18,
+            fontWeight: FontWeight.w600),
         bodyMedium: GoogleFonts.nunito(color: AppColors.textDark, fontSize: 16),
         bodySmall: GoogleFonts.nunito(color: AppColors.textLight, fontSize: 14),
       ),
-      
+
       // ElevatedButton (Tombol Gemoy)
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(

@@ -18,6 +18,7 @@ dependencies:
   isar: ^3.1.0
   isar_flutter_libs: ^3.1.0
   path_provider: ^2.1.1
+  supabase: ^2.10.6
   supabase_flutter: ^2.5.0
 
 dev_dependencies:
@@ -25,9 +26,12 @@ dev_dependencies:
     sdk: flutter
   build_runner: ^2.4.6
   isar_generator: ^3.1.0
-  flutter_lints: ^3.0.01
+  flutter_lints: ^3.0.2
 
 flutter:
   uses-material-design: true
   assets:
     - bank_soal.json
+    - assets/audio/calm_quiz_loop.wav
+    - assets/audio/answer_correct.wav
+    - assets/audio/answer_wrong.wav

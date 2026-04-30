@@ -33,10 +33,10 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
       final activeProfile = ref.read(profileNotifierProvider);
       if (activeProfile != null) {
         ref.read(supabaseSyncProvider).backupProfileProgress(
-          activeProfile.id,
-          widget.totalXp, // Total akumulasi
-          activeProfile.grade,
-        );
+              activeProfile.id,
+              widget.totalXp, // Total akumulasi
+              activeProfile.grade,
+            );
       }
     });
   }
@@ -58,7 +58,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                 SizedBox(
                   height: 250,
                   child: Lottie.network(
-                    isPerfect 
+                    isPerfect
                         ? 'https://assets9.lottiefiles.com/packages/lf20_touohxv0.json' // Animasi Perfect
                         : 'https://assets5.lottiefiles.com/packages/lf20_yziud2q4.json', // Animasi Senang biasa
                     fit: BoxFit.contain,
@@ -72,14 +72,16 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                 const SizedBox(height: 20),
 
                 Text(
-                  isPerfect ? 'Masya Allah! Sempurna!' : 'Alhamdulillah, Selesai!',
+                  isPerfect
+                      ? 'Masya Allah! Sempurna!'
+                      : 'Alhamdulillah, Selesai!',
                   style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                    color: AppColors.primary,
-                  ),
+                        color: AppColors.primary,
+                      ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 10),
-                
+
                 Text(
                   'Kamu mendapatkan:',
                   style: Theme.of(context).textTheme.bodyLarge,
@@ -88,27 +90,30 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
 
                 // Kotak XP
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.2),
+                    color: AppColors.accent.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: AppColors.accent, width: 3),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.star_rounded, color: AppColors.accent, size: 40),
+                      const Icon(Icons.star_rounded,
+                          color: AppColors.accent, size: 40),
                       const SizedBox(width: 10),
                       Text(
                         '+${widget.totalXp} XP',
-                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                          color: AppColors.textDark,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.displayLarge?.copyWith(
+                                  color: AppColors.textDark,
+                                ),
                       ),
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 50),
 
                 // Tombol Kembali
@@ -120,7 +125,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                       // Kembali ke halaman utama (buang semua history layar)
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (context) => const MainMenuScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => const MainMenuScreen()),
                         (route) => false,
                       );
                     },

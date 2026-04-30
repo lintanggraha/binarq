@@ -1,130 +1,416 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../main.dart'; // Untuk navigasi ke MainMenuScreen
-import '../providers/profile_provider.dart';
+
+import '../../../core/audio/audio_service.dart';
 import '../../../core/network/supabase_service.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../main.dart';
+import '../models/profile.dart';
+import '../providers/profile_provider.dart';
+import 'widgets/profile_avatar.dart';
 
 class ProfileSelectionScreen extends ConsumerStatefulWidget {
   const ProfileSelectionScreen({super.key});
 
   @override
-  ConsumerState<ProfileSelectionScreen> createState() => _ProfileSelectionScreenState();
+  ConsumerState<ProfileSelectionScreen> createState() =>
+      _ProfileSelectionScreenState();
 }
 
-class _ProfileSelectionScreenState extends ConsumerState<ProfileSelectionScreen> {
-  
+class _ProfileSelectionScreenState
+    extends ConsumerState<ProfileSelectionScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+
+  String _gender = 'Laki-laki';
+  int _age = 7;
+  int _grade = 1;
+  bool _showForm = true;
+
   @override
   void initState() {
     super.initState();
-    // Jalankan Sinkronisasi Soal dari Supabase ke Isar di Background
     Future.microtask(() {
+      ref.read(audioServiceProvider).startBgm();
       ref.read(supabaseSyncProvider).syncQuestionsFromCloud();
     });
   }
 
   @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    ref.watch(profileNotifierProvider);
     final profileNotifier = ref.read(profileNotifierProvider.notifier);
     final profiles = profileNotifier.availableProfiles;
+    final shouldShowForm = _showForm || profiles.isEmpty;
 
     return Scaffold(
-      backgroundColor: AppColors.textDark, // Background gelap ala Netflix
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Siapa yang mau belajar?',
-                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                  color: Colors.white,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 50),
-              
-              // Grid Profil (Kakak, Adik, Bunda)
-              Wrap(
-                spacing: 30,
-                runSpacing: 30,
-                alignment: WrapAlignment.center,
-                children: profiles.map((profile) {
-                  return GestureDetector(
-                    onTap: () {
-                      // 1. Set Profil Aktif di State
-                      profileNotifier.selectProfile(profile);
-                      
-                      // 2. Jika Bunda, minta PIN (Untuk sekarang kita skip PIN dulu)
-                      // Jika Anak, langsung masuk menu utama
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const MainMenuScreen()),
-                      );
-                    },
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Avatar Berkilau
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: profile.isParent ? AppColors.error : AppColors.primary,
-                              width: 3,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: (profile.isParent ? AppColors.error : AppColors.primary).withOpacity(0.5),
-                                blurRadius: 15,
-                                offset: const Offset(0, 5),
+      body: _CheerfulBackground(
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      shouldShowForm
+                          ? 'Buat Profil Belajar'
+                          : 'Siapa yang mau belajar?',
+                      style:
+                          Theme.of(context).textTheme.displayMedium?.copyWith(
+                                color: AppColors.textDark,
                               ),
-                            ],
-                            image: DecorationImage(
-                              image: NetworkImage(profile.avatarUrl),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        // Nama Profil
-                        Text(
-                          profile.name,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.white,
-                          ),
-                        ),
-                        // Label Kelas atau Status
-                        Text(
-                          profile.isParent ? 'Orang Tua' : 'Kelas ${profile.grade}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
+                      textAlign: TextAlign.center,
                     ),
-                  );
-                }).toList(),
-              ),
+                    const SizedBox(height: 10),
+                    Text(
+                      shouldShowForm
+                          ? 'Isi data anak dulu, nanti kuisnya menyesuaikan kelas.'
+                          : 'Pilih profil atau tambah teman belajar baru.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 30),
+                    if (shouldShowForm)
+                      _ProfileForm(
+                        formKey: _formKey,
+                        nameController: _nameController,
+                        gender: _gender,
+                        age: _age,
+                        grade: _grade,
+                        canCancel: profiles.isNotEmpty,
+                        onGenderChanged: (value) =>
+                            setState(() => _gender = value),
+                        onAgeChanged: (value) => setState(() => _age = value),
+                        onGradeChanged: (value) =>
+                            setState(() => _grade = value),
+                        onCancel: () => setState(() => _showForm = false),
+                        onSubmit: () {
+                          if (!_formKey.currentState!.validate()) return;
 
-              const SizedBox(height: 60),
-              // Tombol Tambah Profil
-              TextButton.icon(
-                onPressed: () {
-                  // TODO: Fitur Tambah Anak
-                },
-                icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-                label: Text(
-                  'Tambah Profil',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
+                          ref.read(audioServiceProvider).playButtonClick();
+                          profileNotifier.addProfile(
+                            name: _nameController.text,
+                            gender: _gender,
+                            age: _age,
+                            grade: _grade,
+                          );
+
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MainMenuScreen(),
+                            ),
+                          );
+                        },
+                      )
+                    else
+                      _ProfileGrid(
+                        profiles: profiles,
+                        onSelect: (profile) {
+                          ref.read(audioServiceProvider).playButtonClick();
+                          profileNotifier.selectProfile(profile);
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MainMenuScreen(),
+                            ),
+                          );
+                        },
+                        onCreate: () => setState(() {
+                          _nameController.clear();
+                          _gender = 'Laki-laki';
+                          _age = 7;
+                          _grade = 1;
+                          _showForm = true;
+                        }),
+                      ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+class _ProfileForm extends StatelessWidget {
+  final GlobalKey<FormState> formKey;
+  final TextEditingController nameController;
+  final String gender;
+  final int age;
+  final int grade;
+  final bool canCancel;
+  final ValueChanged<String> onGenderChanged;
+  final ValueChanged<int> onAgeChanged;
+  final ValueChanged<int> onGradeChanged;
+  final VoidCallback onCancel;
+  final VoidCallback onSubmit;
+
+  const _ProfileForm({
+    required this.formKey,
+    required this.nameController,
+    required this.gender,
+    required this.age,
+    required this.grade,
+    required this.canCancel,
+    required this.onGenderChanged,
+    required this.onAgeChanged,
+    required this.onGradeChanged,
+    required this.onCancel,
+    required this.onSubmit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.18),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Form(
+        key: formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextFormField(
+              controller: nameController,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: 'Nama',
+                prefixIcon: Icon(Icons.badge_outlined),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Nama wajib diisi';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 18),
+            Text('Jenis Kelamin',
+                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 10),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(
+                  value: 'Laki-laki',
+                  icon: Icon(Icons.face_6),
+                  label: Text('Laki-laki'),
+                ),
+                ButtonSegment(
+                  value: 'Perempuan',
+                  icon: Icon(Icons.face_3),
+                  label: Text('Perempuan'),
+                ),
+              ],
+              selected: {gender},
+              onSelectionChanged: (values) => onGenderChanged(values.first),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    initialValue: age,
+                    decoration: const InputDecoration(
+                      labelText: 'Usia',
+                      prefixIcon: Icon(Icons.cake_outlined),
+                    ),
+                    items: [
+                      for (var value = 5; value <= 13; value++)
+                        DropdownMenuItem(
+                          value: value,
+                          child: Text('$value tahun'),
+                        ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) onAgeChanged(value);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    initialValue: grade,
+                    decoration: const InputDecoration(
+                      labelText: 'Kelas',
+                      prefixIcon: Icon(Icons.school_outlined),
+                    ),
+                    items: [
+                      for (var value = 1; value <= 6; value++)
+                        DropdownMenuItem(
+                          value: value,
+                          child: Text('Kelas $value'),
+                        ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) onGradeChanged(value);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: onSubmit,
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: const Text('MULAI BELAJAR'),
+            ),
+            if (canCancel) ...[
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: onCancel,
+                child: const Text('Batal'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileGrid extends StatelessWidget {
+  final List<UserProfile> profiles;
+  final ValueChanged<UserProfile> onSelect;
+  final VoidCallback onCreate;
+
+  const _ProfileGrid({
+    required this.profiles,
+    required this.onSelect,
+    required this.onCreate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Wrap(
+          spacing: 24,
+          runSpacing: 24,
+          alignment: WrapAlignment.center,
+          children: [
+            for (final profile in profiles)
+              InkWell(
+                borderRadius: BorderRadius.circular(24),
+                onTap: () => onSelect(profile),
+                child: Container(
+                  width: 150,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: Column(
+                    children: [
+                      ProfileAvatar(profile: profile),
+                      const SizedBox(height: 12),
+                      Text(
+                        profile.name,
+                        style: Theme.of(context).textTheme.titleMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                      Text(
+                        '${profile.gender} - Kelas ${profile.grade}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 28),
+        OutlinedButton.icon(
+          onPressed: onCreate,
+          icon: const Icon(Icons.add_circle_outline),
+          label: const Text('Tambah Profil'),
+        ),
+      ],
+    );
+  }
+}
+
+class _CheerfulBackground extends StatelessWidget {
+  final Widget child;
+
+  const _CheerfulBackground({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFFFF2B8),
+            Color(0xFFE3FAFF),
+            Color(0xFFFFE1EC),
+          ],
+        ),
+      ),
+      child: CustomPaint(
+        painter: _ConfettiPainter(),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _ConfettiPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paints = [
+      Paint()..color = AppColors.primary.withValues(alpha: 0.22),
+      Paint()..color = AppColors.secondary.withValues(alpha: 0.20),
+      Paint()..color = AppColors.accent.withValues(alpha: 0.26),
+    ];
+
+    for (var i = 0; i < 18; i++) {
+      final x = (i * 73) % size.width;
+      final y = (i * 91) % size.height;
+      final rect = Rect.fromLTWH(x, y, 26 + (i % 3) * 8, 8);
+      canvas.save();
+      canvas.translate(rect.center.dx, rect.center.dy);
+      canvas.rotate((i % 5) * 0.35);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: Offset.zero,
+            width: rect.width,
+            height: rect.height,
+          ),
+          const Radius.circular(4),
+        ),
+        paints[i % paints.length],
+      );
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

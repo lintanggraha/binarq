@@ -14,11 +14,16 @@ class QuizRepository {
 
   QuizRepository(this._isarService);
 
-  Future<List<Question>> fetchQuestions(String mapel, int kelas) async {
+  Future<List<Question>> fetchQuestions(
+      String mapel, String kategoriUjian, int kelas) async {
     // Memberi sedikit delay buatan agar terlihat "loading" dan animasinya mulus
     await Future.delayed(const Duration(milliseconds: 800));
-    
+
     // Mengambil langsung dari Database Isar secara offline!
-    return await _isarService.getQuestionsBySubject(mapel, kelas);
+    return await _isarService.getQuestionsBySubject(
+      mapel,
+      kategoriUjian,
+      kelas,
+    );
   }
 }

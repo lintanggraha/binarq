@@ -4,36 +4,30 @@ import '../models/profile.dart';
 class ProfileNotifier extends StateNotifier<UserProfile?> {
   ProfileNotifier() : super(null);
 
-  // Mock Data: Anggap saja ini diambil dari Isar / Supabase
-  final List<UserProfile> _mockProfiles = [
-    UserProfile(
-      id: 'p1',
-      name: 'Kak Aisyah',
-      avatarUrl: 'https://api.dicebear.com/7.x/fun-emoji/png?seed=Aisyah&backgroundColor=ffd166',
-      level: 12,
-      totalXp: 4500,
-      grade: 4,
-    ),
-    UserProfile(
-      id: 'p2',
-      name: 'Adik Umar',
-      avatarUrl: 'https://api.dicebear.com/7.x/fun-emoji/png?seed=Umar&backgroundColor=00c4b5',
-      level: 3,
-      totalXp: 120,
-      grade: 1,
-    ),
-    UserProfile(
-      id: 'parent1',
-      name: 'Bunda',
-      avatarUrl: 'https://api.dicebear.com/7.x/initials/png?seed=Bunda&backgroundColor=ef476f',
-      level: 0,
-      totalXp: 0,
-      grade: 0,
-      isParent: true,
-    ),
-  ];
+  final List<UserProfile> _profiles = [];
 
-  List<UserProfile> get availableProfiles => _mockProfiles;
+  List<UserProfile> get availableProfiles => List.unmodifiable(_profiles);
+
+  void addProfile({
+    required String name,
+    required String gender,
+    required int age,
+    required int grade,
+  }) {
+    final profile = UserProfile(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      name: name.trim(),
+      gender: gender,
+      age: age,
+      level: 1,
+      totalXp: 0,
+      grade: grade,
+      avatarColorValue: _avatarColors[_profiles.length % _avatarColors.length],
+    );
+
+    _profiles.add(profile);
+    state = profile;
+  }
 
   void selectProfile(UserProfile profile) {
     state = profile;
@@ -44,6 +38,16 @@ class ProfileNotifier extends StateNotifier<UserProfile?> {
   }
 }
 
-final profileNotifierProvider = StateNotifierProvider<ProfileNotifier, UserProfile?>((ref) {
+final profileNotifierProvider =
+    StateNotifierProvider<ProfileNotifier, UserProfile?>((ref) {
   return ProfileNotifier();
 });
+
+const _avatarColors = [
+  0xFFFF9F1C,
+  0xFF2EC4B6,
+  0xFF3A86FF,
+  0xFFEF476F,
+  0xFF8AC926,
+  0xFF8338EC,
+];

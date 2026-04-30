@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:supabase/supabase.dart';
 
+// ignore_for_file: avoid_print
+
 void main() async {
   print('⏳ Menyambungkan ke Supabase...');
   final supabase = SupabaseClient(
@@ -32,7 +34,7 @@ void main() async {
       print('❌ Gagal upload ${q["id"]}: $e');
     }
   }
-  
+
   print('🎉 Semua soal berhasil diupload ke Supabase Cloud!');
   exit(0);
 }

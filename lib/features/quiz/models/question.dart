@@ -10,7 +10,8 @@ class Question {
 
   late Metadata metadata;
   late Content content;
-  late FeedbackInfo feedback; // Nama kelas diubah karena Feedback tabrakan dengan Flutter
+  late FeedbackInfo
+      feedback; // Nama kelas diubah karena Feedback tabrakan dengan Flutter
 
   Question();
 
@@ -65,12 +66,25 @@ class Content {
   factory Content.fromJson(Map<String, dynamic> json) {
     return Content()
       ..tipeSoal = json['tipe_soal']
-      ..pertanyaan = json['pertanyaan']
+      ..pertanyaan = _cleanQuestionPrompt(json['pertanyaan'] as String?)
       ..pilihan = (json['pilihan'] as List?)
           ?.map((e) => Option.fromJson(e as Map<String, dynamic>))
           .toList()
       ..jawabanBenar = json['jawaban_benar'];
   }
+}
+
+String? _cleanQuestionPrompt(String? prompt) {
+  if (prompt == null || !prompt.startsWith('Soal Sumatif ')) {
+    return prompt;
+  }
+
+  final firstSentenceEnd = prompt.indexOf('. ');
+  if (firstSentenceEnd == -1) {
+    return prompt;
+  }
+
+  return prompt.substring(firstSentenceEnd + 2);
 }
 
 @embedded

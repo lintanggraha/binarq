@@ -6,6 +6,10 @@ import '../../profile/providers/profile_provider.dart';
 // Provider untuk menyimpan Mapel yang dipilih (contoh: 'MTK', 'PAI')
 final selectedSubjectProvider = StateProvider<String>((ref) => 'MTK');
 
+// Provider untuk menyimpan jenis sumatif yang dipilih.
+final selectedExamCategoryProvider =
+    StateProvider<String>((ref) => 'Sumatif Awal Semester');
+
 // State object untuk kuis
 class QuizState {
   final List<Question> questions;
@@ -51,7 +55,8 @@ class QuizState {
       lives: lives ?? this.lives,
       xp: xp ?? this.xp,
       isLoading: isLoading ?? this.isLoading,
-      selectedAnswerId: resetAnswer ? null : (selectedAnswerId ?? this.selectedAnswerId),
+      selectedAnswerId:
+          resetAnswer ? null : (selectedAnswerId ?? this.selectedAnswerId),
       isAnswerChecked: isAnswerChecked ?? this.isAnswerChecked,
       isCorrect: isCorrect ?? this.isCorrect,
       isSecondChance: isSecondChance ?? this.isSecondChance,
@@ -59,9 +64,9 @@ class QuizState {
     );
   }
 
-  Question? get currentQuestion => 
-      questions.isNotEmpty && currentIndex < questions.length 
-          ? questions[currentIndex] 
+  Question? get currentQuestion =>
+      questions.isNotEmpty && currentIndex < questions.length
+          ? questions[currentIndex]
           : null;
 }
 
@@ -69,17 +74,20 @@ class QuizState {
 class QuizNotifier extends StateNotifier<QuizState> {
   final QuizRepository _repository;
   final String mapel;
+  final String kategoriUjian;
   final int kelas;
 
-  QuizNotifier(this._repository, this.mapel, this.kelas) : super(QuizState()) {
+  QuizNotifier(this._repository, this.mapel, this.kategoriUjian, this.kelas)
+      : super(QuizState()) {
     _loadQuestions();
   }
 
   Future<void> _loadQuestions() async {
     state = state.copyWith(isLoading: true);
     // Mengambil soal dari Database Isar berdasarkan Mapel dan Kelas Anak
-    final questions = await _repository.fetchQuestions(mapel, kelas);
-    
+    final questions =
+        await _repository.fetchQuestions(mapel, kategoriUjian, kelas);
+
     // Acak urutan pertanyaan agar tidak bosan
     questions.shuffle();
 
@@ -97,8 +105,9 @@ class QuizNotifier extends StateNotifier<QuizState> {
   void checkAnswer() {
     if (state.selectedAnswerId == null) return;
 
-    final isBenar = state.currentQuestion?.content.jawabanBenar == state.selectedAnswerId;
-    
+    final isBenar =
+        state.currentQuestion?.content.jawabanBenar == state.selectedAnswerId;
+
     int newXp = state.xp;
     int newLives = state.lives;
 
@@ -149,13 +158,15 @@ class QuizNotifier extends StateNotifier<QuizState> {
 }
 
 // Provider Global
-final quizNotifierProvider = StateNotifierProvider.autoDispose<QuizNotifier, QuizState>((ref) {
+final quizNotifierProvider =
+    StateNotifierProvider.autoDispose<QuizNotifier, QuizState>((ref) {
   final repository = ref.read(quizRepositoryProvider);
   final mapel = ref.watch(selectedSubjectProvider);
+  final kategoriUjian = ref.watch(selectedExamCategoryProvider);
   final profile = ref.watch(profileNotifierProvider);
-  
+
   // Jika profil belum dipilih, default kelas 1
   final kelas = profile?.grade ?? 1;
 
-  return QuizNotifier(repository, mapel, kelas);
+  return QuizNotifier(repository, mapel, kategoriUjian, kelas);
 });

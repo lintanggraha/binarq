@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/audio/audio_service.dart';
-import '../../quiz/presentation/quiz_screen.dart';
+import '../../exam/presentation/exam_selection_screen.dart';
 import '../../quiz/providers/quiz_provider.dart';
 import '../../profile/providers/profile_provider.dart';
 
@@ -88,7 +88,8 @@ class SubjectSelectionScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Pilih Pelajaran', style: Theme.of(context).textTheme.headlineLarge),
+        title: Text('Pilih Pelajaran',
+            style: Theme.of(context).textTheme.headlineLarge),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.textDark),
@@ -116,14 +117,17 @@ class SubjectSelectionScreen extends ConsumerWidget {
                         onTap: () {
                           // Bunyikan SFX klik
                           ref.read(audioServiceProvider).playButtonClick();
-                          
+
                           // Simpan Mapel yang dipilih ke state
-                          ref.read(selectedSubjectProvider.notifier).state = subject['id'];
-                          
-                          // Lanjut ke Kuis
+                          ref.read(selectedSubjectProvider.notifier).state =
+                              subject['id'];
+
+                          // Pilih jenis sumatif sebelum mulai kuis
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const QuizScreen()),
+                            MaterialPageRoute(
+                              builder: (context) => const ExamSelectionScreen(),
+                            ),
                           );
                         },
                         borderRadius: BorderRadius.circular(24),
@@ -134,7 +138,8 @@ class SubjectSelectionScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(24),
                             boxShadow: [
                               BoxShadow(
-                                color: (subject['color'] as Color).withOpacity(0.4),
+                                color: (subject['color'] as Color)
+                                    .withValues(alpha: 0.4),
                                 blurRadius: 10,
                                 offset: const Offset(0, 5),
                               ),
@@ -145,10 +150,11 @@ class SubjectSelectionScreen extends ConsumerWidget {
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.3),
+                                  color: Colors.white.withValues(alpha: 0.3),
                                   shape: BoxShape.circle,
                                 ),
-                                child: Icon(subject['icon'], size: 40, color: Colors.white),
+                                child: Icon(subject['icon'],
+                                    size: 40, color: Colors.white),
                               ),
                               const SizedBox(width: 20),
                               Expanded(
@@ -157,22 +163,30 @@ class SubjectSelectionScreen extends ConsumerWidget {
                                   children: [
                                     Text(
                                       subject['name'],
-                                      style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                                        color: Colors.white,
-                                        fontSize: 28,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .displayMedium
+                                          ?.copyWith(
+                                            color: Colors.white,
+                                            fontSize: 28,
+                                          ),
                                     ),
                                     const SizedBox(height: 5),
                                     Text(
                                       subject['desc'],
-                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        color: Colors.white.withOpacity(0.9),
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.9),
+                                          ),
                                     ),
                                   ],
                                 ),
                               ),
-                              const Icon(Icons.arrow_forward_ios, color: Colors.white),
+                              const Icon(Icons.arrow_forward_ios,
+                                  color: Colors.white),
                             ],
                           ),
                         ),
