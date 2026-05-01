@@ -43,7 +43,7 @@ class SupabaseSyncService {
 
   /// Membackup progress XP dan Nyawa anak ke Cloud
   Future<void> backupProfileProgress(
-      String profileId, int xp, int grade) async {
+      dynamic profileId, int xp, int grade) async {
     try {
       await _client.from('profiles').upsert({
         'id': profileId,

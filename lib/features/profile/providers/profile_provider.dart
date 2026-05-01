@@ -1,21 +1,32 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/database/isar_service.dart';
+import '../../quiz/repositories/quiz_repository.dart';
 import '../models/profile.dart';
 
 class ProfileNotifier extends StateNotifier<UserProfile?> {
-  ProfileNotifier() : super(null);
+  final IsarService _isarService;
+  List<UserProfile> _profiles = [];
 
-  final List<UserProfile> _profiles = [];
+  ProfileNotifier(this._isarService) : super(null) {
+    _loadProfiles();
+  }
 
   List<UserProfile> get availableProfiles => List.unmodifiable(_profiles);
 
-  void addProfile({
+  Future<void> _loadProfiles() async {
+    _profiles = await _isarService.getAllProfiles();
+    // Jika hanya ada 1 profil, bisa langsung pilih? 
+    // Tapi user minta "jika sudah pernah membuat maka selanjutnya profile akan tersimpan"
+    state = null; // Default belum terpilih
+  }
+
+  Future<void> addProfile({
     required String name,
     required String gender,
     required int age,
     required int grade,
-  }) {
-    final profile = UserProfile(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
+  }) async {
+    final profile = UserProfile.create(
       name: name.trim(),
       gender: gender,
       age: age,
@@ -25,8 +36,9 @@ class ProfileNotifier extends StateNotifier<UserProfile?> {
       avatarColorValue: _avatarColors[_profiles.length % _avatarColors.length],
     );
 
-    _profiles.add(profile);
-    state = profile;
+    await _isarService.saveProfile(profile);
+    await _loadProfiles();
+    state = _profiles.last;
   }
 
   void selectProfile(UserProfile profile) {
@@ -36,11 +48,25 @@ class ProfileNotifier extends StateNotifier<UserProfile?> {
   void logout() {
     state = null;
   }
+
+  Future<void> updateXp(int xpGain) async {
+    if (state == null) return;
+
+    final updatedProfile = state!..totalXp += xpGain;
+    
+    // Logika level up sederhana (setiap 100 XP naik level)
+    updatedProfile.level = (updatedProfile.totalXp / 100).floor() + 1;
+
+    await _isarService.saveProfile(updatedProfile);
+    state = updatedProfile;
+    await _loadProfiles(); // Refresh list
+  }
 }
 
 final profileNotifierProvider =
     StateNotifierProvider<ProfileNotifier, UserProfile?>((ref) {
-  return ProfileNotifier();
+  final isarService = ref.read(isarServiceProvider);
+  return ProfileNotifier(isarService);
 });
 
 const _avatarColors = [

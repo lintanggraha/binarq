@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/question.dart';
+import '../models/quiz_history.dart';
 import '../repositories/quiz_repository.dart';
 import '../../profile/providers/profile_provider.dart';
 
@@ -77,22 +78,27 @@ class QuizNotifier extends StateNotifier<QuizState> {
   final String mapel;
   final String kategoriUjian;
   final int kelas;
+  final int? profileId;
 
-  QuizNotifier(this._repository, this.mapel, this.kategoriUjian, this.kelas)
+  QuizNotifier(this._repository, this.mapel, this.kategoriUjian, this.kelas, this.profileId)
       : super(QuizState()) {
     _loadQuestions();
   }
 
   Future<void> _loadQuestions() async {
     state = state.copyWith(isLoading: true);
-    // Mengambil soal dari Database Isar berdasarkan Mapel dan Kelas Anak
+    // Mengambil soal dari Database Isar berdasarkan Mapel dan Kelas Anak, serta filter history
     final questions =
-        await _repository.fetchQuestions(mapel, kategoriUjian, kelas);
+        await _repository.fetchQuestions(mapel, kategoriUjian, kelas, profileId: profileId);
 
-    questions.sort((a, b) => a.questionId.compareTo(b.questionId));
+    // Acak soal agar tidak bosan
+    questions.shuffle();
+    
+    // Ambil maksimal 15 soal per sesi biar tidak terlalu lama
+    final limitedQuestions = questions.take(15).toList();
 
     state = state.copyWith(
-      questions: questions,
+      questions: limitedQuestions,
       isLoading: false,
     );
   }
@@ -111,19 +117,34 @@ class QuizNotifier extends StateNotifier<QuizState> {
     if (state.selectedAnswerId == null) return;
 
     final currentQuestion = state.currentQuestion;
-    final isIsian = currentQuestion?.content.tipeSoal == 'isian';
+    if (currentQuestion == null) return;
+
+    final isIsian = currentQuestion.content.tipeSoal == 'isian';
     final isBenar = isIsian
-        ? _normalizeAnswer(currentQuestion?.content.jawabanBenar) ==
+        ? _normalizeAnswer(currentQuestion.content.jawabanBenar) ==
             _normalizeAnswer(state.selectedAnswerId)
-        : currentQuestion?.content.jawabanBenar == state.selectedAnswerId;
+        : currentQuestion.content.jawabanBenar == state.selectedAnswerId;
 
     int newXp = state.xp;
     int newCorrectCount = state.correctCount;
 
     if (isBenar) {
-      int reward = state.currentQuestion?.metadata.xpReward ?? 10;
+      int reward = currentQuestion.metadata.xpReward;
       newXp += reward;
       newCorrectCount += 1;
+    }
+
+    // Simpan ke history setiap selesai menjawab satu soal (opsional, atau per kuis)
+    // Di sini kita simpan history soal ini sudah dijawab.
+    if (profileId != null) {
+       _repository.saveHistory(QuizHistory.create(
+        profileId: profileId!,
+        questionId: currentQuestion.id,
+        mapel: mapel,
+        kategoriUjian: kategoriUjian,
+        score: isBenar ? 100 : 0,
+        completedAt: DateTime.now(),
+      ));
     }
 
     state = state.copyWith(
@@ -163,8 +184,8 @@ final quizNotifierProvider =
   final kategoriUjian = ref.watch(selectedExamCategoryProvider);
   final profile = ref.watch(profileNotifierProvider);
 
-  // Jika profil belum dipilih, default kelas 1
   final kelas = profile?.grade ?? 1;
+  final profileId = profile?.id;
 
-  return QuizNotifier(repository, mapel, kategoriUjian, kelas);
+  return QuizNotifier(repository, mapel, kategoriUjian, kelas, profileId);
 });

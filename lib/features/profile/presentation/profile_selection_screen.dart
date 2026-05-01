@@ -24,7 +24,7 @@ class _ProfileSelectionScreenState
   String _gender = 'Laki-laki';
   int _age = 7;
   int _grade = 1;
-  bool _showForm = true;
+  bool? _showForm; // null means we haven't decided yet based on profiles count
 
   @override
   void initState() {
@@ -45,7 +45,9 @@ class _ProfileSelectionScreenState
     ref.watch(profileNotifierProvider);
     final profileNotifier = ref.read(profileNotifierProvider.notifier);
     final profiles = profileNotifier.availableProfiles;
-    final shouldShowForm = _showForm || profiles.isEmpty;
+    
+    // Tentukan tampilan awal jika belum diatur
+    final shouldShowForm = _showForm ?? profiles.isEmpty;
 
     return Scaffold(
       body: _CheerfulBackground(

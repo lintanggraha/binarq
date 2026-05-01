@@ -1,15 +1,22 @@
-class UserProfile {
-  final String id;
-  final String name;
-  final String gender;
-  final int age;
-  final int level;
-  final int totalXp;
-  final int grade; // Kelas 1-6
-  final int avatarColorValue;
+import 'package:isar/isar.dart';
 
-  UserProfile({
-    required this.id,
+part 'profile.g.dart';
+
+@collection
+class UserProfile {
+  Id id = Isar.autoIncrement;
+
+  late String name;
+  late String gender;
+  late int age;
+  late int level;
+  late int totalXp;
+  late int grade; // Kelas 1-6
+  late int avatarColorValue;
+
+  UserProfile();
+
+  UserProfile.create({
     required this.name,
     required this.gender,
     required this.age,

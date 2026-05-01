@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
@@ -5,31 +6,105 @@ import '../../../core/audio/audio_service.dart';
 import '../providers/quiz_provider.dart';
 import 'result_screen.dart';
 
+// ─── Praise words ────────────────────────────────────────────────────────────
+const _praises = [
+  'Barakallah! 🌟',
+  'Mumtaz! ✨',
+  'Masya Allah! 💫',
+  'Hebat! 🎉',
+  'Luar Biasa! 🚀',
+  'Keren Banget! ⭐',
+];
+const _comboPraises = ['COMBO! 🔥', 'ON FIRE! 🔥🔥', 'UNSTOPPABLE! 🔥🔥🔥'];
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 class QuizScreen extends ConsumerStatefulWidget {
   const QuizScreen({super.key});
-
   @override
   ConsumerState<QuizScreen> createState() => _QuizScreenState();
 }
 
-class _QuizScreenState extends ConsumerState<QuizScreen> {
+class _QuizScreenState extends ConsumerState<QuizScreen>
+    with TickerProviderStateMixin {
+  // Slide transition
+  late final AnimationController _slideCtrl;
+  late Animation<Offset> _slideAnim;
+  int _questionKey = 0;
+
+  // Praise overlay
+  String? _praiseText;
+  late final AnimationController _praiseCtrl;
+  late final Animation<double> _praiseAnim;
+
+  // Combo
+  int _combo = 0;
+
+  // Shake for wrong
+  late final AnimationController _shakeCtrl;
+  late final Animation<double> _shakeAnim;
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      ref.read(audioServiceProvider).resumeBgm();
-    });
+    Future.microtask(() => ref.read(audioServiceProvider).resumeBgm());
+
+    _slideCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 380));
+    _slideAnim = Tween<Offset>(begin: const Offset(1.2, 0), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOutCubic));
+    _slideCtrl.forward();
+
+    _praiseCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 800));
+    _praiseAnim = CurvedAnimation(parent: _praiseCtrl, curve: Curves.elasticOut);
+
+    _shakeCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 450));
+    _shakeAnim = Tween<double>(begin: 0, end: 1).animate(_shakeCtrl);
+  }
+
+  @override
+  void dispose() {
+    _slideCtrl.dispose();
+    _praiseCtrl.dispose();
+    _shakeCtrl.dispose();
+    super.dispose();
+  }
+
+  void _triggerNextQuestion() {
+    _slideCtrl.forward(from: 0);
+    setState(() => _questionKey++);
+  }
+
+  void _triggerPraise(bool isCorrect) {
+    if (isCorrect) {
+      _combo++;
+      final idx = min(_combo - 1, _praises.length - 1);
+      final text = _combo >= 3
+          ? _comboPraises[min(_combo - 3, _comboPraises.length - 1)]
+          : _praises[idx % _praises.length];
+      setState(() => _praiseText = text);
+      _praiseCtrl.forward(from: 0).then((_) {
+        Future.delayed(const Duration(milliseconds: 900), () {
+          if (mounted) {
+            _praiseCtrl.reverse();
+          }
+        });
+      });
+    } else {
+      _combo = 0;
+      _shakeCtrl.forward(from: 0);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Mendengarkan perubahan state untuk navigasi
-    ref.listen<QuizState>(quizNotifierProvider, (previous, next) {
+    ref.listen<QuizState>(quizNotifierProvider, (prev, next) {
       if (next.isFinished) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ResultScreen(
+            builder: (_) => ResultScreen(
               totalXp: next.xp,
               correctCount: next.correctCount,
               totalQuestions: next.totalQuestions,
@@ -38,254 +113,433 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           ),
         );
       }
-
-      // Membunyikan suara saat jawaban dicek
-      if (next.isAnswerChecked && previous?.isAnswerChecked == false) {
+      if (next.isAnswerChecked && prev?.isAnswerChecked == false) {
+        final audio = ref.read(audioServiceProvider);
         if (next.isCorrect) {
-          ref.read(audioServiceProvider).playCorrectAnswer();
+          audio.playCorrectAnswer();
         } else {
-          ref.read(audioServiceProvider).playWrongAnswer();
+          audio.playWrongAnswer();
         }
+        _triggerPraise(next.isCorrect);
+      }
+      // Trigger slide on new question
+      if (prev != null &&
+          !prev.isAnswerChecked &&
+          !next.isAnswerChecked &&
+          prev.currentIndex != next.currentIndex) {
+        _triggerNextQuestion();
       }
     });
 
-    final quizState = ref.watch(quizNotifierProvider);
-    final quizNotifier = ref.read(quizNotifierProvider.notifier);
+    final state = ref.watch(quizNotifierProvider);
+    final notifier = ref.read(quizNotifierProvider.notifier);
 
-    if (quizState.isLoading) {
+    if (state.isLoading) {
       return const Scaffold(
         body: _QuizBackground(
-          child: Center(child: CircularProgressIndicator()),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: AppColors.primary),
+                SizedBox(height: 16),
+                Text('Memuat soal...', style: TextStyle(color: AppColors.textLight)),
+              ],
+            ),
+          ),
         ),
       );
     }
 
-    final question = quizState.currentQuestion;
+    final question = state.currentQuestion;
     if (question == null) {
       return const Scaffold(
-        body: _QuizBackground(
-          child: Center(child: Text('Kuis Selesai!')),
-        ),
+        body: _QuizBackground(child: Center(child: Text('Kuis Selesai!'))),
       );
     }
 
     return Scaffold(
-      body: _QuizBackground(
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Top Bar (XP & progress soal)
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _StatusBadge(
-                      label: '${quizState.xp} XP',
-                      color: AppColors.accent,
+      body: Stack(
+        children: [
+          _QuizBackground(
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // ── Top Bar ──────────────────────────────────────────────
+                  _TopBar(state: state, combo: _combo),
+
+                  // ── Question Card (slide transition) ─────────────────────
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 16),
+                          SlideTransition(
+                            position: _slideAnim,
+                            child: _QuestionCard(
+                              key: ValueKey(_questionKey),
+                              text: question.content.pertanyaan ?? '',
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // ── Answer Choices ──────────────────────────────
+                          if (question.content.tipeSoal == 'isian')
+                            _EssayAnswerField(
+                              questionId: question.questionId,
+                              enabled: !state.isAnswerChecked,
+                              isChecked: state.isAnswerChecked,
+                              isCorrect: state.isCorrect,
+                              correctAnswer: question.content.jawabanBenar ?? '',
+                              onChanged: notifier.selectAnswer,
+                            )
+                          else if (question.content.pilihan != null)
+                            AnimatedBuilder(
+                              animation: _shakeAnim,
+                              builder: (context, child) {
+                                final shake = state.isAnswerChecked && !state.isCorrect
+                                    ? sin(_shakeAnim.value * pi * 6) * 6
+                                    : 0.0;
+                                return Transform.translate(
+                                  offset: Offset(shake, 0),
+                                  child: child,
+                                );
+                              },
+                              child: Column(
+                                children: question.content.pilihan!.map((p) {
+                                  return _AnswerButton(
+                                    key: ValueKey('${_questionKey}_${p.idPilihan}'),
+                                    label: '${p.idPilihan}. ${p.teks ?? ''}',
+                                    state: state,
+                                    optionId: p.idPilihan ?? '',
+                                    correctId: question.content.jawabanBenar ?? '',
+                                    onTap: () {
+                                      ref.read(audioServiceProvider).playButtonClick();
+                                      notifier.selectAnswer(p.idPilihan!);
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+
+                          // ── Explanation Box ─────────────────────────────
+                          if (state.isAnswerChecked)
+                            _ExplanationBox(
+                              isCorrect: state.isCorrect,
+                              explanation: state.isCorrect
+                                  ? (question.feedback.penjelasanAnak ?? '')
+                                  : 'Jawaban benar: ${_correctAnswerText(question)}',
+                            ),
+
+                          const SizedBox(height: 20),
+                        ],
+                      ),
                     ),
-                    _StatusBadge(
-                      label:
-                          'Soal ${quizState.questionNumber}/${quizState.totalQuestions}',
-                      color: AppColors.primary,
+                  ),
+
+                  // ── Action Button ─────────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    child: _ActionButton(
+                      state: state,
+                      onTap: () {
+                        ref.read(audioServiceProvider).playButtonClick();
+                        if (!state.isAnswerChecked) {
+                          notifier.checkAnswer();
+                        } else {
+                          notifier.nextQuestion();
+                          _triggerNextQuestion();
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Praise Overlay ─────────────────────────────────────────────────
+          if (_praiseText != null)
+            IgnorePointer(
+              child: Align(
+                alignment: const Alignment(0, -0.3),
+                child: ScaleTransition(
+                  scale: _praiseAnim,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFFD166), Color(0xFFFF8C42)],
+                      ),
+                      borderRadius: BorderRadius.circular(40),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.accent.withValues(alpha: 0.5),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      _praiseText!,
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          // ── Combo Badge ────────────────────────────────────────────────────
+          if (_combo >= 2)
+            Positioned(
+              top: 80,
+              right: 20,
+              child: _ComboBadge(combo: _combo),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Top Bar ──────────────────────────────────────────────────────────────────
+class _TopBar extends StatelessWidget {
+  final QuizState state;
+  final int combo;
+  const _TopBar({required this.state, required this.combo});
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = state.totalQuestions == 0
+        ? 0.0
+        : state.questionNumber / state.totalQuestions;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              // XP Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.accent, width: 1.5),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star_rounded, color: AppColors.accent, size: 18),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${state.xp} XP',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.accent,
+                        fontSize: 14,
+                      ),
                     ),
                   ],
                 ),
               ),
-
-              // Area Pertanyaan
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 24),
-
-                      // Kotak Soal
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          question.content.pertanyaan ?? '',
-                          style: Theme.of(context).textTheme.bodyLarge,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-
-                      if (question.content.tipeSoal == 'isian')
-                        _EssayAnswerField(
-                          questionId: question.questionId,
-                          enabled: !quizState.isAnswerChecked,
-                          isChecked: quizState.isAnswerChecked,
-                          isCorrect: quizState.isCorrect,
-                          correctAnswer: question.content.jawabanBenar ?? '',
-                          onChanged: quizNotifier.selectAnswer,
-                        ),
-
-                      // Pilihan Jawaban
-                      if (question.content.tipeSoal != 'isian' &&
-                          question.content.pilihan != null)
-                        ...question.content.pilihan!.map((p) {
-                          final isSelected =
-                              quizState.selectedAnswerId == p.idPilihan;
-
-                          // Menentukan warna tombol berdasarkan status jawaban
-                          Color btnColor = AppColors.surface;
-                          Color textColor = AppColors.textDark;
-
-                          if (quizState.isAnswerChecked) {
-                            if (p.idPilihan == question.content.jawabanBenar) {
-                              btnColor = AppColors.success;
-                              textColor = Colors.white;
-                            } else if (isSelected) {
-                              btnColor = AppColors.error;
-                              textColor = Colors.white;
-                            }
-                          } else if (isSelected) {
-                            btnColor = AppColors.primary.withValues(alpha: 0.2);
-                          }
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16.0),
-                            child: InkWell(
-                              onTap: () {
-                                ref
-                                    .read(audioServiceProvider)
-                                    .playButtonClick();
-                                quizNotifier.selectAnswer(p.idPilihan!);
-                              },
-                              borderRadius: BorderRadius.circular(16),
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: btnColor,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color:
-                                        isSelected && !quizState.isAnswerChecked
-                                            ? AppColors.primary
-                                            : Colors.transparent,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: Text(
-                                  p.teks ?? '',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyLarge
-                                      ?.copyWith(
-                                        color: textColor,
-                                      ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
-
-                      // Kotak Penjelasan / Hint (Muncul setelah dijawab)
-                      if (quizState.isAnswerChecked)
-                        Container(
-                          margin: const EdgeInsets.only(top: 20),
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: quizState.isCorrect
-                                ? AppColors.success.withValues(alpha: 0.1)
-                                : AppColors.accent.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: quizState.isCorrect
-                                  ? AppColors.success
-                                  : AppColors.accent,
-                              width: 2,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    quizState.isCorrect
-                                        ? Icons.check_circle
-                                        : Icons.lightbulb,
-                                    color: quizState.isCorrect
-                                        ? AppColors.success
-                                        : AppColors.secondary,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    quizState.isCorrect
-                                        ? 'Masya Allah, Benar!'
-                                        : 'Belum tepat',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          color: quizState.isCorrect
-                                              ? AppColors.success
-                                              : AppColors.secondary,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                quizState.isCorrect
-                                    ? question.feedback.penjelasanAnak ?? ''
-                                    : 'Jawaban benar: ${_correctAnswerText(question)}',
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ],
-                          ),
-                        ),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Tombol Konfirmasi / Lanjut
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 60,
-                  child: ElevatedButton(
-                    onPressed: quizState.selectedAnswerId == null
-                        ? null
-                        : () {
-                            ref.read(audioServiceProvider).playButtonClick();
-                            if (!quizState.isAnswerChecked) {
-                              quizNotifier.checkAnswer();
-                            } else {
-                              quizNotifier.nextQuestion();
-                            }
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: quizState.isAnswerChecked
-                          ? AppColors.primary
-                          : AppColors.secondary,
-                    ),
-                    child: Text(
-                      !quizState.isAnswerChecked ? 'CEK JAWABAN' : 'LANJUT',
-                      style: const TextStyle(fontSize: 20, color: Colors.white),
-                    ),
-                  ),
+              const Spacer(),
+              // Question counter
+              Text(
+                '${state.questionNumber} / ${state.totalQuestions}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textDark,
+                  fontSize: 16,
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 10),
+          // Animated progress bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: progress),
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOutCubic,
+              builder: (_, value, __) => LinearProgressIndicator(
+                value: value,
+                minHeight: 10,
+                backgroundColor: Colors.black12,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  combo >= 3 ? AppColors.secondary : AppColors.primary,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Question Card ────────────────────────────────────────────────────────────
+class _QuestionCard extends StatelessWidget {
+  final String text;
+  const _QuestionCard({super.key, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.12),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              fontSize: 18,
+              height: 1.6,
+            ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+}
+
+// ─── Bouncy Answer Button ─────────────────────────────────────────────────────
+class _AnswerButton extends StatefulWidget {
+  final String label;
+  final String optionId;
+  final String correctId;
+  final QuizState state;
+  final VoidCallback onTap;
+
+  const _AnswerButton({
+    super.key,
+    required this.label,
+    required this.optionId,
+    required this.correctId,
+    required this.state,
+    required this.onTap,
+  });
+
+  @override
+  State<_AnswerButton> createState() => _AnswerButtonState();
+}
+
+class _AnswerButtonState extends State<_AnswerButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _scaleCtrl;
+  late final Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 120));
+    _scaleAnim = Tween<double>(begin: 1.0, end: 0.93).animate(
+        CurvedAnimation(parent: _scaleCtrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _scaleCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = widget.state.selectedAnswerId == widget.optionId;
+    final isChecked = widget.state.isAnswerChecked;
+
+    Color bgColor = Colors.white;
+    Color borderColor = Colors.black12;
+    Color textColor = AppColors.textDark;
+    IconData? icon;
+
+    if (isChecked) {
+      if (widget.optionId == widget.correctId) {
+        bgColor = AppColors.success.withValues(alpha: 0.12);
+        borderColor = AppColors.success;
+        textColor = AppColors.success;
+        icon = Icons.check_circle_rounded;
+      } else if (isSelected) {
+        bgColor = AppColors.error.withValues(alpha: 0.12);
+        borderColor = AppColors.error;
+        textColor = AppColors.error;
+        icon = Icons.cancel_rounded;
+      }
+    } else if (isSelected) {
+      bgColor = AppColors.primary.withValues(alpha: 0.1);
+      borderColor = AppColors.primary;
+      textColor = AppColors.primaryDark;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GestureDetector(
+        onTapDown: (_) {
+          if (!isChecked) _scaleCtrl.forward();
+        },
+        onTapUp: (_) {
+          _scaleCtrl.reverse();
+          if (!isChecked) widget.onTap();
+        },
+        onTapCancel: () => _scaleCtrl.reverse(),
+        child: ScaleTransition(
+          scale: _scaleAnim,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: borderColor, width: 2),
+              boxShadow: isSelected && !isChecked
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      )
+                    ]
+                  : [],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: textColor,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+                if (icon != null) ...[
+                  const SizedBox(width: 8),
+                  Icon(icon, color: textColor, size: 22),
+                ],
+              ],
+            ),
           ),
         ),
       ),
@@ -293,6 +547,159 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   }
 }
 
+// ─── Explanation Box ──────────────────────────────────────────────────────────
+class _ExplanationBox extends StatelessWidget {
+  final bool isCorrect;
+  final String explanation;
+  const _ExplanationBox({required this.isCorrect, required this.explanation});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutBack,
+      builder: (_, v, child) => Transform.scale(scale: v, child: child),
+      child: Container(
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isCorrect
+              ? AppColors.success.withValues(alpha: 0.1)
+              : AppColors.accent.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isCorrect ? AppColors.success : AppColors.secondary,
+            width: 2,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              isCorrect ? Icons.auto_awesome_rounded : Icons.lightbulb_rounded,
+              color: isCorrect ? AppColors.success : AppColors.secondary,
+              size: 22,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                explanation,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: isCorrect ? AppColors.success : AppColors.textDark,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Action Button ────────────────────────────────────────────────────────────
+class _ActionButton extends StatelessWidget {
+  final QuizState state;
+  final VoidCallback onTap;
+  const _ActionButton({required this.state, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final canAct = state.selectedAnswerId != null;
+    final label = state.isAnswerChecked ? 'LANJUT →' : 'CEK JAWABAN';
+    final color = state.isAnswerChecked ? AppColors.primary : AppColors.secondary;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: double.infinity,
+      height: 60,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: canAct ? color : Colors.grey.shade300,
+        boxShadow: canAct
+            ? [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.4),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                )
+              ]
+            : [],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: canAct ? onTap : null,
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: canAct ? Colors.white : Colors.grey,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Combo Badge ──────────────────────────────────────────────────────────────
+class _ComboBadge extends StatelessWidget {
+  final int combo;
+  const _ComboBadge({required this.combo});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      key: ValueKey(combo),
+      tween: Tween(begin: 0.5, end: 1.0),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.elasticOut,
+      builder: (_, v, child) => Transform.scale(scale: v, child: child),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF6B35), Color(0xFFFF8C42)],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.orange.withValues(alpha: 0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('🔥', style: TextStyle(fontSize: 16)),
+            const SizedBox(width: 4),
+            Text(
+              'x$combo',
+              style: const TextStyle(
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Essay Field ──────────────────────────────────────────────────────────────
 class _EssayAnswerField extends StatefulWidget {
   final String questionId;
   final bool enabled;
@@ -315,48 +722,43 @@ class _EssayAnswerField extends StatefulWidget {
 }
 
 class _EssayAnswerFieldState extends State<_EssayAnswerField> {
-  late final TextEditingController _controller;
+  late final TextEditingController _ctrl;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController();
+    _ctrl = TextEditingController();
   }
 
   @override
-  void didUpdateWidget(covariant _EssayAnswerField oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.questionId != widget.questionId) {
-      _controller.clear();
-    }
+  void didUpdateWidget(covariant _EssayAnswerField old) {
+    super.didUpdateWidget(old);
+    if (old.questionId != widget.questionId) _ctrl.clear();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _ctrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final borderColor = widget.isChecked
-        ? widget.isCorrect
-            ? AppColors.success
-            : AppColors.error
+        ? (widget.isCorrect ? AppColors.success : AppColors.error)
         : AppColors.primary.withValues(alpha: 0.45);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextField(
-          controller: _controller,
+          controller: _ctrl,
           enabled: widget.enabled,
           onChanged: widget.onChanged,
-          textInputAction: TextInputAction.done,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
-            hintText: 'Tulis jawaban singkat',
+            hintText: 'Tulis jawaban singkat di sini...',
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
             enabledBorder: OutlineInputBorder(
@@ -365,7 +767,8 @@ class _EssayAnswerFieldState extends State<_EssayAnswerField> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 2),
             ),
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
@@ -374,13 +777,13 @@ class _EssayAnswerFieldState extends State<_EssayAnswerField> {
           ),
         ),
         if (widget.isChecked && !widget.isCorrect) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             'Jawaban benar: ${widget.correctAnswer}',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.error,
-                  fontWeight: FontWeight.w700,
-                ),
+            style: const TextStyle(
+              color: AppColors.error,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ],
@@ -388,58 +791,9 @@ class _EssayAnswerFieldState extends State<_EssayAnswerField> {
   }
 }
 
-String _correctAnswerText(question) {
-  if (question.content.tipeSoal == 'isian') {
-    return question.content.jawabanBenar ?? '';
-  }
-
-  final correctId = question.content.jawabanBenar;
-  final options = question.content.pilihan ?? [];
-  for (final option in options) {
-    if (option.idPilihan == correctId) {
-      return option.teks ?? correctId ?? '';
-    }
-  }
-
-  return correctId ?? '';
-}
-
-class _StatusBadge extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const _StatusBadge({
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withValues(alpha: 0.6), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.18),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: color),
-      ),
-    );
-  }
-}
-
+// ─── Background ───────────────────────────────────────────────────────────────
 class _QuizBackground extends StatelessWidget {
   final Widget child;
-
   const _QuizBackground({required this.child});
 
   @override
@@ -449,39 +803,20 @@ class _QuizBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFE3FAFF),
-            Color(0xFFFFF7D6),
-            Color(0xFFFFE8F0),
-          ],
+          colors: [Color(0xFFE3FAFF), Color(0xFFFFF7D6), Color(0xFFFFE8F0)],
         ),
       ),
-      child: CustomPaint(
-        painter: _QuizPatternPainter(),
-        child: child,
-      ),
+      child: child,
     );
   }
 }
 
-class _QuizPatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..color = AppColors.primary.withValues(alpha: 0.12);
-
-    for (var i = 0; i < 8; i++) {
-      final y = size.height * (i + 1) / 9;
-      final path = Path()..moveTo(0, y);
-      for (var x = 0.0; x <= size.width; x += 36) {
-        path.quadraticBezierTo(x + 18, y + (i.isEven ? 10 : -10), x + 36, y);
-      }
-      canvas.drawPath(path, paint);
-    }
+// ─── Helper ───────────────────────────────────────────────────────────────────
+String _correctAnswerText(dynamic question) {
+  final correctId = question.content.jawabanBenar;
+  if (question.content.tipeSoal == 'isian') return correctId ?? '';
+  for (final o in question.content.pilihan ?? []) {
+    if (o.idPilihan == correctId) return o.teks ?? correctId ?? '';
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  return correctId ?? '';
 }
