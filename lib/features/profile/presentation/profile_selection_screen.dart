@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/audio/audio_service.dart';
-import '../../../core/network/supabase_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../main.dart';
 import '../models/profile.dart';
@@ -31,8 +30,7 @@ class _ProfileSelectionScreenState
   void initState() {
     super.initState();
     Future.microtask(() {
-      ref.read(audioServiceProvider).startBgm();
-      ref.read(supabaseSyncProvider).syncQuestionsFromCloud();
+      ref.read(audioServiceProvider).resumeBgm();
     });
   }
 
@@ -210,21 +208,9 @@ class _ProfileForm extends StatelessWidget {
             Text('Jenis Kelamin',
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 10),
-            SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(
-                  value: 'Laki-laki',
-                  icon: Icon(Icons.face_6),
-                  label: Text('Laki-laki'),
-                ),
-                ButtonSegment(
-                  value: 'Perempuan',
-                  icon: Icon(Icons.face_3),
-                  label: Text('Perempuan'),
-                ),
-              ],
-              selected: {gender},
-              onSelectionChanged: (values) => onGenderChanged(values.first),
+            _GenderSelector(
+              value: gender,
+              onChanged: onGenderChanged,
             ),
             const SizedBox(height: 18),
             Row(
@@ -284,6 +270,99 @@ class _ProfileForm extends StatelessWidget {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GenderSelector extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  const _GenderSelector({
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 360;
+        final children = [
+          _GenderButton(
+            label: 'Laki-laki',
+            icon: Icons.face_6,
+            selected: value == 'Laki-laki',
+            onTap: () => onChanged('Laki-laki'),
+          ),
+          _GenderButton(
+            label: 'Perempuan',
+            icon: Icons.face_3,
+            selected: value == 'Perempuan',
+            onTap: () => onChanged('Perempuan'),
+          ),
+        ];
+
+        if (isNarrow) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              children[0],
+              const SizedBox(height: 10),
+              children[1],
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: children[0]),
+            const SizedBox(width: 12),
+            Expanded(child: children[1]),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _GenderButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _GenderButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 20),
+      label: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(0, 52),
+        foregroundColor: selected ? Colors.white : AppColors.textDark,
+        backgroundColor: selected ? AppColors.primary : Colors.white,
+        side: BorderSide(
+          color: selected
+              ? AppColors.primary
+              : AppColors.primary.withValues(alpha: 0.35),
+          width: 2,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
       ),
     );

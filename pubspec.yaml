@@ -32,6 +32,6 @@ flutter:
   uses-material-design: true
   assets:
     - bank_soal.json
-    - assets/audio/calm_quiz_loop.wav
+    - assets/audio/cheerful_quiz_loop.wav
     - assets/audio/answer_correct.wav
     - assets/audio/answer_wrong.wav

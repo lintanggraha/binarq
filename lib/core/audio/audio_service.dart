@@ -11,8 +11,8 @@ class AudioService {
       'https://actions.google.com/sounds/v1/cartoon/pop.ogg';
   static const String _levelUpUrl =
       'https://actions.google.com/sounds/v1/cartoon/magic_chime_chord.ogg';
-  static const String _quizBgmAsset = 'audio/calm_quiz_loop.wav';
-  static const double _bgmVolume = 0.42;
+  static const String _quizBgmAsset = 'audio/cheerful_quiz_loop.wav';
+  static const double _bgmVolume = 0.26;
 
   bool _isBgmPlaying = false;
 
@@ -40,22 +40,31 @@ class AudioService {
     await _bgmPlayer.play(AssetSource(_quizBgmAsset), volume: 0);
     _isBgmPlaying = true;
 
-    for (var step = 1; step <= 10; step++) {
-      await Future.delayed(const Duration(milliseconds: 70));
-      await _bgmPlayer.setVolume(_bgmVolume * step / 10);
+    for (var step = 1; step <= 12; step++) {
+      await Future.delayed(const Duration(milliseconds: 90));
+      await _bgmPlayer.setVolume(_bgmVolume * step / 12);
     }
   }
 
   Future<void> stopBgm() async {
     if (!_isBgmPlaying) return;
 
-    for (var step = 9; step >= 0; step--) {
-      await _bgmPlayer.setVolume(_bgmVolume * step / 10);
+    for (var step = 11; step >= 0; step--) {
+      await _bgmPlayer.setVolume(_bgmVolume * step / 12);
       await Future.delayed(const Duration(milliseconds: 50));
     }
 
     await _bgmPlayer.stop();
     _isBgmPlaying = false;
+  }
+
+  Future<void> resumeBgm() async {
+    if (!_isBgmPlaying) {
+      await startBgm();
+      return;
+    }
+
+    await _bgmPlayer.setVolume(_bgmVolume);
   }
 
   Future<void> dispose() async {

@@ -50,7 +50,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      ref.read(audioServiceProvider).startBgm();
+      ref.read(audioServiceProvider).resumeBgm();
     });
   }
 

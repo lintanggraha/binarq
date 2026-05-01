@@ -14,55 +14,56 @@ final selectedExamCategoryProvider =
 class QuizState {
   final List<Question> questions;
   final int currentIndex;
-  final int lives;
   final int xp;
+  final int correctCount;
   final bool isLoading;
   final String? selectedAnswerId;
   final bool isAnswerChecked;
   final bool isCorrect;
-  final bool isSecondChance;
   final bool isFinished;
 
   QuizState({
     this.questions = const [],
     this.currentIndex = 0,
-    this.lives = 5,
     this.xp = 0,
+    this.correctCount = 0,
     this.isLoading = true,
     this.selectedAnswerId,
     this.isAnswerChecked = false,
     this.isCorrect = false,
-    this.isSecondChance = false,
     this.isFinished = false,
   });
 
   QuizState copyWith({
     List<Question>? questions,
     int? currentIndex,
-    int? lives,
     int? xp,
+    int? correctCount,
     bool? isLoading,
     String? selectedAnswerId,
     bool resetAnswer = false,
     bool? isAnswerChecked,
     bool? isCorrect,
-    bool? isSecondChance,
     bool? isFinished,
   }) {
     return QuizState(
       questions: questions ?? this.questions,
       currentIndex: currentIndex ?? this.currentIndex,
-      lives: lives ?? this.lives,
       xp: xp ?? this.xp,
+      correctCount: correctCount ?? this.correctCount,
       isLoading: isLoading ?? this.isLoading,
       selectedAnswerId:
           resetAnswer ? null : (selectedAnswerId ?? this.selectedAnswerId),
       isAnswerChecked: isAnswerChecked ?? this.isAnswerChecked,
       isCorrect: isCorrect ?? this.isCorrect,
-      isSecondChance: isSecondChance ?? this.isSecondChance,
       isFinished: isFinished ?? this.isFinished,
     );
   }
+
+  int get totalQuestions => questions.length;
+  int get questionNumber => currentIndex + 1;
+  int get score =>
+      totalQuestions == 0 ? 0 : ((correctCount / totalQuestions) * 100).round();
 
   Question? get currentQuestion =>
       questions.isNotEmpty && currentIndex < questions.length
@@ -88,8 +89,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
     final questions =
         await _repository.fetchQuestions(mapel, kategoriUjian, kelas);
 
-    // Acak urutan pertanyaan agar tidak bosan
-    questions.shuffle();
+    questions.sort((a, b) => a.questionId.compareTo(b.questionId));
 
     state = state.copyWith(
       questions: questions,
@@ -118,50 +118,31 @@ class QuizNotifier extends StateNotifier<QuizState> {
         : currentQuestion?.content.jawabanBenar == state.selectedAnswerId;
 
     int newXp = state.xp;
-    int newLives = state.lives;
+    int newCorrectCount = state.correctCount;
 
     if (isBenar) {
-      // Jika second chance, dapat 50% XP
       int reward = state.currentQuestion?.metadata.xpReward ?? 10;
-      newXp += state.isSecondChance ? (reward ~/ 2) : reward;
-    } else {
-      if (!state.isSecondChance) {
-        // Kesempatan pertama salah, tidak kurangi nyawa, masuk second chance
-      } else {
-        // Kesempatan kedua salah, kurangi nyawa
-        newLives -= 1;
-      }
+      newXp += reward;
+      newCorrectCount += 1;
     }
 
     state = state.copyWith(
       isAnswerChecked: true,
       isCorrect: isBenar,
       xp: newXp,
-      lives: newLives,
+      correctCount: newCorrectCount,
     );
   }
 
   void nextQuestion() {
-    if (!state.isCorrect && !state.isSecondChance) {
-      // Jika tadi salah di kesempatan pertama, berikan second chance
+    if (state.currentIndex < state.questions.length - 1) {
       state = state.copyWith(
+        currentIndex: state.currentIndex + 1,
         isAnswerChecked: false,
-        resetAnswer: true, // Reset input
-        isSecondChance: true,
+        resetAnswer: true,
       );
     } else {
-      // Pindah ke soal berikutnya
-      if (state.currentIndex < state.questions.length - 1) {
-        state = state.copyWith(
-          currentIndex: state.currentIndex + 1,
-          isAnswerChecked: false,
-          resetAnswer: true,
-          isSecondChance: false,
-        );
-      } else {
-        // Kuis selesai
-        state = state.copyWith(isFinished: true);
-      }
+      state = state.copyWith(isFinished: true);
     }
   }
 }

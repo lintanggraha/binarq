@@ -5,11 +5,24 @@ import '../../../core/audio/audio_service.dart';
 import '../providers/quiz_provider.dart';
 import 'result_screen.dart';
 
-class QuizScreen extends ConsumerWidget {
+class QuizScreen extends ConsumerStatefulWidget {
   const QuizScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<QuizScreen> createState() => _QuizScreenState();
+}
+
+class _QuizScreenState extends ConsumerState<QuizScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(audioServiceProvider).resumeBgm();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Mendengarkan perubahan state untuk navigasi
     ref.listen<QuizState>(quizNotifierProvider, (previous, next) {
       if (next.isFinished) {
@@ -18,7 +31,9 @@ class QuizScreen extends ConsumerWidget {
           MaterialPageRoute(
             builder: (context) => ResultScreen(
               totalXp: next.xp,
-              sisaNyawa: next.lives,
+              correctCount: next.correctCount,
+              totalQuestions: next.totalQuestions,
+              score: next.score,
             ),
           ),
         );
@@ -59,7 +74,7 @@ class QuizScreen extends ConsumerWidget {
         child: SafeArea(
           child: Column(
             children: [
-              // Top Bar (XP & Nyawa)
+              // Top Bar (XP & progress soal)
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
@@ -70,8 +85,9 @@ class QuizScreen extends ConsumerWidget {
                       color: AppColors.accent,
                     ),
                     _StatusBadge(
-                      label: '${quizState.lives}/5 Nyawa',
-                      color: AppColors.error,
+                      label:
+                          'Soal ${quizState.questionNumber}/${quizState.totalQuestions}',
+                      color: AppColors.primary,
                     ),
                   ],
                 ),
@@ -179,7 +195,7 @@ class QuizScreen extends ConsumerWidget {
                         }),
 
                       // Kotak Penjelasan / Hint (Muncul setelah dijawab)
-                      if (quizState.isAnswerChecked || quizState.isSecondChance)
+                      if (quizState.isAnswerChecked)
                         Container(
                           margin: const EdgeInsets.only(top: 20),
                           padding: const EdgeInsets.all(20),
@@ -212,7 +228,7 @@ class QuizScreen extends ConsumerWidget {
                                   Text(
                                     quizState.isCorrect
                                         ? 'Masya Allah, Benar!'
-                                        : 'Hint:',
+                                        : 'Belum tepat',
                                     style: Theme.of(context)
                                         .textTheme
                                         .titleMedium
@@ -228,7 +244,7 @@ class QuizScreen extends ConsumerWidget {
                               Text(
                                 quizState.isCorrect
                                     ? question.feedback.penjelasanAnak ?? ''
-                                    : question.feedback.hint ?? '',
+                                    : 'Jawaban benar: ${_correctAnswerText(question)}',
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
                             ],
@@ -370,6 +386,22 @@ class _EssayAnswerFieldState extends State<_EssayAnswerField> {
       ],
     );
   }
+}
+
+String _correctAnswerText(question) {
+  if (question.content.tipeSoal == 'isian') {
+    return question.content.jawabanBenar ?? '';
+  }
+
+  final correctId = question.content.jawabanBenar;
+  final options = question.content.pilihan ?? [];
+  for (final option in options) {
+    if (option.idPilihan == correctId) {
+      return option.teks ?? correctId ?? '';
+    }
+  }
+
+  return correctId ?? '';
 }
 
 class _StatusBadge extends StatelessWidget {

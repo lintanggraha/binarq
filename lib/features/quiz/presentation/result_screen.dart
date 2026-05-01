@@ -9,12 +9,16 @@ import '../../profile/providers/profile_provider.dart';
 
 class ResultScreen extends ConsumerStatefulWidget {
   final int totalXp;
-  final int sisaNyawa;
+  final int correctCount;
+  final int totalQuestions;
+  final int score;
 
   const ResultScreen({
     super.key,
     required this.totalXp,
-    required this.sisaNyawa,
+    required this.correctCount,
+    required this.totalQuestions,
+    required this.score,
   });
 
   @override
@@ -43,8 +47,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Menghitung apakah ini sesi sempurna (nyawa utuh)
-    final bool isPerfect = widget.sisaNyawa == 5;
+    final bool isPerfect = widget.correctCount == widget.totalQuestions;
 
     return Scaffold(
       body: SafeArea(
@@ -83,12 +86,11 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                 const SizedBox(height: 10),
 
                 Text(
-                  'Kamu mendapatkan:',
+                  'Nilai akhir kamu:',
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 20),
 
-                // Kotak XP
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
@@ -100,11 +102,11 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.star_rounded,
+                      const Icon(Icons.workspace_premium_rounded,
                           color: AppColors.accent, size: 40),
                       const SizedBox(width: 10),
                       Text(
-                        '+${widget.totalXp} XP',
+                        '${widget.score}',
                         style:
                             Theme.of(context).textTheme.displayLarge?.copyWith(
                                   color: AppColors.textDark,
@@ -112,6 +114,12 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Benar ${widget.correctCount} dari ${widget.totalQuestions} soal - +${widget.totalXp} XP',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  textAlign: TextAlign.center,
                 ),
 
                 const SizedBox(height: 50),
