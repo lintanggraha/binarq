@@ -19,10 +19,13 @@ class IsarService {
       final isar = await Isar.open(
         [QuestionSchema, UserProfileSchema, QuizHistorySchema],
         directory: dir.path,
-        inspector: true,
       );
-
-      // Jalankan Seeding (Isi data awal jika kosong)
+      
+      // Force refresh data untuk benerin soal Grade 1 yang nyasar
+      await isar.writeTxn(() async {
+        await isar.questions.clear();
+      });
+      
       await _seedInitialData(isar);
       return isar;
     }

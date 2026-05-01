@@ -16,6 +16,7 @@ class AudioService {
   static const String _comboUrl =
       'https://actions.google.com/sounds/v1/cartoon/toy_musical_instrument_sparkle.ogg';
   static const String _quizBgmAsset = 'assets/audio/cheerful_quiz_loop.wav';
+  static const String _quizBgmUrl = 'https://actions.google.com/sounds/v1/cartoon/conga_loop.ogg';
   static const double _bgmVolume = 0.26;
 
   bool _isBgmPlaying = false;
@@ -49,7 +50,7 @@ class AudioService {
 
     await _bgmPlayer.setPlayerMode(PlayerMode.mediaPlayer);
     await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
-    await _bgmPlayer.play(AssetSource(_quizBgmAsset), volume: 0);
+    await _bgmPlayer.play(UrlSource(_quizBgmUrl), volume: 0);
     _isBgmPlaying = true;
 
     for (var step = 1; step <= 12; step++) {
