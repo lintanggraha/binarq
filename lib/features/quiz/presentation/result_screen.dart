@@ -54,7 +54,13 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
     Future.microtask(() {
       final activeProfile = ref.read(profileNotifierProvider);
       if (activeProfile != null) {
-        ref.read(profileNotifierProvider.notifier).updateXp(widget.totalXp);
+        // Update lokal (XP & Medali)
+        ref.read(profileNotifierProvider.notifier).updateProgress(
+              xpGain: widget.totalXp,
+              score: widget.score,
+            );
+        
+        // Backup ke Cloud
         ref.read(supabaseSyncProvider).backupProfileProgress(
               activeProfile.id,
               activeProfile.totalXp + widget.totalXp,

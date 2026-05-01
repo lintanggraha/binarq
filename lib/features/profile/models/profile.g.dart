@@ -27,28 +27,43 @@ const UserProfileSchema = CollectionSchema(
       name: r'avatarColorValue',
       type: IsarType.long,
     ),
-    r'gender': PropertySchema(
+    r'bronzeMedals': PropertySchema(
       id: 2,
+      name: r'bronzeMedals',
+      type: IsarType.long,
+    ),
+    r'gender': PropertySchema(
+      id: 3,
       name: r'gender',
       type: IsarType.string,
     ),
+    r'goldMedals': PropertySchema(
+      id: 4,
+      name: r'goldMedals',
+      type: IsarType.long,
+    ),
     r'grade': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'grade',
       type: IsarType.long,
     ),
     r'level': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'level',
       type: IsarType.long,
     ),
     r'name': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'name',
       type: IsarType.string,
     ),
+    r'silverMedals': PropertySchema(
+      id: 8,
+      name: r'silverMedals',
+      type: IsarType.long,
+    ),
     r'totalXp': PropertySchema(
-      id: 6,
+      id: 9,
       name: r'totalXp',
       type: IsarType.long,
     )
@@ -86,11 +101,14 @@ void _userProfileSerialize(
 ) {
   writer.writeLong(offsets[0], object.age);
   writer.writeLong(offsets[1], object.avatarColorValue);
-  writer.writeString(offsets[2], object.gender);
-  writer.writeLong(offsets[3], object.grade);
-  writer.writeLong(offsets[4], object.level);
-  writer.writeString(offsets[5], object.name);
-  writer.writeLong(offsets[6], object.totalXp);
+  writer.writeLong(offsets[2], object.bronzeMedals);
+  writer.writeString(offsets[3], object.gender);
+  writer.writeLong(offsets[4], object.goldMedals);
+  writer.writeLong(offsets[5], object.grade);
+  writer.writeLong(offsets[6], object.level);
+  writer.writeString(offsets[7], object.name);
+  writer.writeLong(offsets[8], object.silverMedals);
+  writer.writeLong(offsets[9], object.totalXp);
 }
 
 UserProfile _userProfileDeserialize(
@@ -102,12 +120,15 @@ UserProfile _userProfileDeserialize(
   final object = UserProfile();
   object.age = reader.readLong(offsets[0]);
   object.avatarColorValue = reader.readLong(offsets[1]);
-  object.gender = reader.readString(offsets[2]);
-  object.grade = reader.readLong(offsets[3]);
+  object.bronzeMedals = reader.readLong(offsets[2]);
+  object.gender = reader.readString(offsets[3]);
+  object.goldMedals = reader.readLong(offsets[4]);
+  object.grade = reader.readLong(offsets[5]);
   object.id = id;
-  object.level = reader.readLong(offsets[4]);
-  object.name = reader.readString(offsets[5]);
-  object.totalXp = reader.readLong(offsets[6]);
+  object.level = reader.readLong(offsets[6]);
+  object.name = reader.readString(offsets[7]);
+  object.silverMedals = reader.readLong(offsets[8]);
+  object.totalXp = reader.readLong(offsets[9]);
   return object;
 }
 
@@ -123,14 +144,20 @@ P _userProfileDeserializeProp<P>(
     case 1:
       return (reader.readLong(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
-    case 3:
       return (reader.readLong(offset)) as P;
+    case 3:
+      return (reader.readString(offset)) as P;
     case 4:
       return (reader.readLong(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 6:
+      return (reader.readLong(offset)) as P;
+    case 7:
+      return (reader.readString(offset)) as P;
+    case 8:
+      return (reader.readLong(offset)) as P;
+    case 9:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -339,6 +366,62 @@ extension UserProfileQueryFilter
     });
   }
 
+  QueryBuilder<UserProfile, UserProfile, QAfterFilterCondition>
+      bronzeMedalsEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'bronzeMedals',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterFilterCondition>
+      bronzeMedalsGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'bronzeMedals',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterFilterCondition>
+      bronzeMedalsLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'bronzeMedals',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterFilterCondition>
+      bronzeMedalsBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'bronzeMedals',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<UserProfile, UserProfile, QAfterFilterCondition> genderEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -469,6 +552,62 @@ extension UserProfileQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'gender',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterFilterCondition>
+      goldMedalsEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'goldMedals',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterFilterCondition>
+      goldMedalsGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'goldMedals',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterFilterCondition>
+      goldMedalsLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'goldMedals',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterFilterCondition>
+      goldMedalsBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'goldMedals',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -765,6 +904,62 @@ extension UserProfileQueryFilter
     });
   }
 
+  QueryBuilder<UserProfile, UserProfile, QAfterFilterCondition>
+      silverMedalsEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'silverMedals',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterFilterCondition>
+      silverMedalsGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'silverMedals',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterFilterCondition>
+      silverMedalsLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'silverMedals',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterFilterCondition>
+      silverMedalsBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'silverMedals',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<UserProfile, UserProfile, QAfterFilterCondition> totalXpEqualTo(
       int value) {
     return QueryBuilder.apply(this, (query) {
@@ -854,6 +1049,19 @@ extension UserProfileQuerySortBy
     });
   }
 
+  QueryBuilder<UserProfile, UserProfile, QAfterSortBy> sortByBronzeMedals() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bronzeMedals', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterSortBy>
+      sortByBronzeMedalsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bronzeMedals', Sort.desc);
+    });
+  }
+
   QueryBuilder<UserProfile, UserProfile, QAfterSortBy> sortByGender() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'gender', Sort.asc);
@@ -863,6 +1071,18 @@ extension UserProfileQuerySortBy
   QueryBuilder<UserProfile, UserProfile, QAfterSortBy> sortByGenderDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'gender', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterSortBy> sortByGoldMedals() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'goldMedals', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterSortBy> sortByGoldMedalsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'goldMedals', Sort.desc);
     });
   }
 
@@ -899,6 +1119,19 @@ extension UserProfileQuerySortBy
   QueryBuilder<UserProfile, UserProfile, QAfterSortBy> sortByNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterSortBy> sortBySilverMedals() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'silverMedals', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterSortBy>
+      sortBySilverMedalsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'silverMedals', Sort.desc);
     });
   }
 
@@ -943,6 +1176,19 @@ extension UserProfileQuerySortThenBy
     });
   }
 
+  QueryBuilder<UserProfile, UserProfile, QAfterSortBy> thenByBronzeMedals() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bronzeMedals', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterSortBy>
+      thenByBronzeMedalsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bronzeMedals', Sort.desc);
+    });
+  }
+
   QueryBuilder<UserProfile, UserProfile, QAfterSortBy> thenByGender() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'gender', Sort.asc);
@@ -952,6 +1198,18 @@ extension UserProfileQuerySortThenBy
   QueryBuilder<UserProfile, UserProfile, QAfterSortBy> thenByGenderDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'gender', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterSortBy> thenByGoldMedals() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'goldMedals', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterSortBy> thenByGoldMedalsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'goldMedals', Sort.desc);
     });
   }
 
@@ -1003,6 +1261,19 @@ extension UserProfileQuerySortThenBy
     });
   }
 
+  QueryBuilder<UserProfile, UserProfile, QAfterSortBy> thenBySilverMedals() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'silverMedals', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QAfterSortBy>
+      thenBySilverMedalsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'silverMedals', Sort.desc);
+    });
+  }
+
   QueryBuilder<UserProfile, UserProfile, QAfterSortBy> thenByTotalXp() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'totalXp', Sort.asc);
@@ -1031,10 +1302,22 @@ extension UserProfileQueryWhereDistinct
     });
   }
 
+  QueryBuilder<UserProfile, UserProfile, QDistinct> distinctByBronzeMedals() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'bronzeMedals');
+    });
+  }
+
   QueryBuilder<UserProfile, UserProfile, QDistinct> distinctByGender(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'gender', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QDistinct> distinctByGoldMedals() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'goldMedals');
     });
   }
 
@@ -1054,6 +1337,12 @@ extension UserProfileQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'name', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<UserProfile, UserProfile, QDistinct> distinctBySilverMedals() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'silverMedals');
     });
   }
 
@@ -1084,9 +1373,21 @@ extension UserProfileQueryProperty
     });
   }
 
+  QueryBuilder<UserProfile, int, QQueryOperations> bronzeMedalsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'bronzeMedals');
+    });
+  }
+
   QueryBuilder<UserProfile, String, QQueryOperations> genderProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'gender');
+    });
+  }
+
+  QueryBuilder<UserProfile, int, QQueryOperations> goldMedalsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'goldMedals');
     });
   }
 
@@ -1105,6 +1406,12 @@ extension UserProfileQueryProperty
   QueryBuilder<UserProfile, String, QQueryOperations> nameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'name');
+    });
+  }
+
+  QueryBuilder<UserProfile, int, QQueryOperations> silverMedalsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'silverMedals');
     });
   }
 

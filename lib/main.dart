@@ -122,6 +122,18 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    // Koleksi Medali
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _MedalBadge(count: activeProfile.goldMedals, color: const Color(0xFFFFD700), label: 'Gold'),
+                        const SizedBox(width: 12),
+                        _MedalBadge(count: activeProfile.silverMedals, color: const Color(0xFFC0C0C0), label: 'Silver'),
+                        const SizedBox(width: 12),
+                        _MedalBadge(count: activeProfile.bronzeMedals, color: const Color(0xFFCD7F32), label: 'Bronze'),
+                      ],
+                    ),
                   ] else ...[
                     const Text('BinarQ', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
                   ],
@@ -235,6 +247,47 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _MedalBadge extends StatelessWidget {
+  final int count;
+  final Color color;
+  final String label;
+
+  const _MedalBadge({
+    required this.count,
+    required this.color,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.3),
+                blurRadius: 8,
+                spreadRadius: 2,
+              ),
+            ],
+            border: Border.all(color: color, width: 2),
+          ),
+          child: Icon(Icons.emoji_events, color: color, size: 24),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '$count',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
+      ],
     );
   }
 }

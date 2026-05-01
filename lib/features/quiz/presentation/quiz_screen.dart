@@ -151,11 +151,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
 
     final state = ref.watch(quizNotifierProvider);
     final notifier = ref.read(quizNotifierProvider.notifier);
+    final subjectId = ref.watch(selectedSubjectProvider);
 
     if (state.isLoading) {
-      return const Scaffold(
+      return Scaffold(
         body: _QuizBackground(
-          child: Center(
+          subjectId: subjectId,
+          child: const Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -171,8 +173,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
 
     final question = state.currentQuestion;
     if (question == null) {
-      return const Scaffold(
-        body: _QuizBackground(child: Center(child: Text('Kuis Selesai!'))),
+      return Scaffold(
+        body: _QuizBackground(
+          subjectId: subjectId,
+          child: const Center(child: Text('Kuis Selesai!')),
+        ),
       );
     }
 
@@ -180,6 +185,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
       body: Stack(
         children: [
           _QuizBackground(
+            subjectId: subjectId,
             child: SafeArea(
               child: Column(
                 children: [
@@ -315,6 +321,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                 ),
               ),
             ),
+          ],
 
           // ── Combo Badge ────────────────────────────────────────────────────
           if (_combo >= 2)
@@ -918,7 +925,8 @@ class _ParticlePainter extends CustomPainter {
 
 class _QuizBackground extends StatelessWidget {
   final Widget child;
-  const _QuizBackground({required this.child});
+  final String subjectId;
+  const _QuizBackground({required this.child, required this.subjectId});
 
   @override
   Widget build(BuildContext context) {
@@ -930,9 +938,62 @@ class _QuizBackground extends StatelessWidget {
           colors: [Color(0xFFE3FAFF), Color(0xFFFFF7D6), Color(0xFFFFE8F0)],
         ),
       ),
-      child: child,
+      child: CustomPaint(
+        painter: _QuizPatternPainter(subjectId: subjectId),
+        child: child,
+      ),
     );
   }
+}
+
+class _QuizPatternPainter extends CustomPainter {
+  final String subjectId;
+  _QuizPatternPainter({required this.subjectId});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = AppColors.primary.withValues(alpha: 0.05);
+
+    final rng = Random(subjectId.hashCode);
+    
+    // Pilih ikon berdasarkan mapel
+    String patternChar = '✨';
+    if (subjectId == 'MTK') patternChar = '+';
+    if (subjectId == 'PAI') patternChar = '🌙';
+    if (subjectId == 'BIND') patternChar = 'Aa';
+    if (subjectId == 'IPAS') patternChar = '🌿';
+    if (subjectId == 'PPKN') patternChar = '🇮🇩';
+
+    for (var i = 0; i < 20; i++) {
+      final x = rng.nextDouble() * size.width;
+      final y = rng.nextDouble() * size.height;
+      final fontSize = 20.0 + rng.nextDouble() * 40.0;
+      
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: patternChar,
+          style: TextStyle(
+            fontSize: fontSize,
+            color: AppColors.primary.withValues(alpha: 0.07),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      
+      textPainter.layout();
+      canvas.save();
+      canvas.translate(x, y);
+      canvas.rotate(rng.nextDouble() * 0.5);
+      textPainter.paint(canvas, Offset.zero);
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => oldDelegate.subjectId != subjectId;
 }
 
 // ─── Helper ───────────────────────────────────────────────────────────────────

@@ -49,11 +49,21 @@ class ProfileNotifier extends StateNotifier<UserProfile?> {
     state = null;
   }
 
-  Future<void> updateXp(int xpGain) async {
+  Future<void> updateProgress({required int xpGain, required int score}) async {
     if (state == null) return;
 
-    final updatedProfile = state!..totalXp += xpGain;
+    final updatedProfile = state!;
+    updatedProfile.totalXp += xpGain;
     
+    // Logika Medali
+    if (score >= 100) {
+      updatedProfile.goldMedals++;
+    } else if (score >= 80) {
+      updatedProfile.silverMedals++;
+    } else if (score >= 60) {
+      updatedProfile.bronzeMedals++;
+    }
+
     // Logika level up sederhana (setiap 100 XP naik level)
     updatedProfile.level = (updatedProfile.totalXp / 100).floor() + 1;
 

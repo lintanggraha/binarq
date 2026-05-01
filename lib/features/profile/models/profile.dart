@@ -13,6 +13,10 @@ class UserProfile {
   late int totalXp;
   late int grade; // Kelas 1-6
   late int avatarColorValue;
+  
+  int goldMedals = 0;
+  int silverMedals = 0;
+  int bronzeMedals = 0;
 
   UserProfile();
 
@@ -24,5 +28,8 @@ class UserProfile {
     required this.totalXp,
     required this.grade,
     required this.avatarColorValue,
+    this.goldMedals = 0,
+    this.silverMedals = 0,
+    this.bronzeMedals = 0,
   });
 }
