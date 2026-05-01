@@ -326,28 +326,36 @@ class _TopBar extends StatelessWidget {
         children: [
           Row(
             children: [
-              // XP Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.accent, width: 1.5),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.star_rounded, color: AppColors.accent, size: 18),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${state.xp} XP',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.accent,
-                        fontSize: 14,
+              // XP Badge (bouncy on change)
+              TweenAnimationBuilder<double>(
+                key: ValueKey(state.xp),
+                tween: Tween(begin: 1.2, end: 1.0),
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.elasticOut,
+                builder: (_, scale, child) =>
+                    Transform.scale(scale: scale, child: child),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.accent, width: 1.5),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.bolt_rounded, color: AppColors.accent, size: 18),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${state.xp} XP',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.accent,
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const Spacer(),
@@ -362,22 +370,71 @@ class _TopBar extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          // Animated progress bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: progress),
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.easeOutCubic,
-              builder: (_, value, __) => LinearProgressIndicator(
-                value: value,
-                minHeight: 10,
-                backgroundColor: Colors.black12,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  combo >= 3 ? AppColors.secondary : AppColors.primary,
-                ),
-              ),
+          const SizedBox(height: 12),
+          // ── Adventure Progress Bar ──
+          SizedBox(
+            height: 36,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final barWidth = constraints.maxWidth;
+                return TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: progress),
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.easeOutCubic,
+                  builder: (_, value, __) {
+                    final runnerX = value * (barWidth - 30);
+                    return Stack(
+                      alignment: Alignment.centerLeft,
+                      children: [
+                        // Track background
+                        Container(
+                          height: 12,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.black.withValues(alpha: 0.08),
+                          ),
+                        ),
+                        // Filled track
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          height: 12,
+                          width: value * barWidth,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            gradient: LinearGradient(
+                              colors: combo >= 3
+                                  ? [const Color(0xFFFF6B35), AppColors.secondary]
+                                  : [AppColors.primary, const Color(0xFF06D6A0)],
+                            ),
+                          ),
+                        ),
+                        // Runner character
+                        Positioned(
+                          left: runnerX.clamp(0, barWidth - 30),
+                          child: TweenAnimationBuilder<double>(
+                            key: ValueKey(state.questionNumber),
+                            tween: Tween(begin: -3.0, end: 0.0),
+                            duration: const Duration(milliseconds: 400),
+                            curve: Curves.bounceOut,
+                            builder: (_, bounce, child) =>
+                                Transform.translate(
+                                    offset: Offset(0, bounce), child: child),
+                            child: const Text('🏃', style: TextStyle(fontSize: 22)),
+                          ),
+                        ),
+                        // Finish flag
+                        Positioned(
+                          right: 0,
+                          child: Text(
+                            value >= 0.95 ? '🏆' : '🏁',
+                            style: const TextStyle(fontSize: 18),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
             ),
           ),
         ],
@@ -385,6 +442,7 @@ class _TopBar extends StatelessWidget {
     );
   }
 }
+
 
 // ─── Question Card ────────────────────────────────────────────────────────────
 class _QuestionCard extends StatelessWidget {
