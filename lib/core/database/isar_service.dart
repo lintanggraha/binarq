@@ -98,6 +98,12 @@ class IsarService {
               .kelasEqualTo(kelas),
         );
     
+    // Triple Shield: Pastikan tidak ada keyword keliling/luas untuk kelas 1-2
+    if (kelas <= 2) {
+      query = query.filter().not().content((c) => c.pertanyaanContains('keliling', caseSensitive: false))
+                   .and().not().content((c) => c.pertanyaanContains('luas', caseSensitive: false));
+    }
+    
     if (excludeIds != null && excludeIds.isNotEmpty) {
       // Isar doesn't have a direct "not in" for list of strings easily in one filter call without looping or using a complex query
       // But we can filter them after fetching or use multiple 'and not'

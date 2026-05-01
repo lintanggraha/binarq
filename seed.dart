@@ -19,6 +19,15 @@ void main() async {
 
   final content = await file.readAsString();
   final List<dynamic> questions = jsonDecode(content);
+  
+  print('🗑️ Membersihkan tabel questions di Supabase...');
+  try {
+    // Menghapus semua data (gunakan filter yang selalu benar untuk menghapus semua jika RLS mengizinkan)
+    await supabase.from('questions').delete().neq('id', '0');
+    print('✅ Tabel berhasil dibersihkan.');
+  } catch (e) {
+    print('⚠️ Gagal membersihkan tabel (mungkin RLS): $e');
+  }
 
   print('🚀 Memulai proses upload ${questions.length} soal (dalam batch 100)...');
 
