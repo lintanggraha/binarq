@@ -91,7 +91,10 @@ class QuizNotifier extends StateNotifier<QuizState> {
     print('DEBUG: Loading questions for Mapel: $mapel, Kelas: $kelas, Kategori: $kategoriUjian');
     
     // Mengambil soal dari Database Isar berdasarkan Mapel dan Kelas Anak, serta filter history
-    final allQuestions = await _repository.fetchQuestions(mapel, kategoriUjian, kelas, profileId: profileId);
+    final allQuestionsRaw = await _repository.fetchQuestions(mapel, kategoriUjian, kelas, profileId: profileId);
+
+    // Double-check filter kelas di memory (biar tidak ada bocor soal kelas lain)
+    final allQuestions = allQuestionsRaw.where((q) => q.metadata.kelas == kelas).toList();
 
     // Pisahkan PG dan Isian
     final pgQuestions = allQuestions.where((q) => q.content.tipeSoal == 'pilihan_ganda').toList();

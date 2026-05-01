@@ -52,9 +52,9 @@ class _ProfileSelectionScreenState
     return Scaffold(
       body: _CheerfulBackground(
         child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+            child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 520),
                 child: Column(
@@ -182,7 +182,7 @@ class _ProfileForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 22),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(24),
@@ -244,7 +244,7 @@ class _ProfileForm extends StatelessWidget {
                     },
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButtonFormField<int>(
                     initialValue: grade,
@@ -297,11 +297,10 @@ class _GenderSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 360;
-        final children = [
-          _GenderButton(
+    return Row(
+      children: [
+        Expanded(
+          child: _GenderButton(
             label: 'Laki-laki',
             icon: Icons.face_6,
             selected: value == 'Laki-laki',
@@ -310,7 +309,10 @@ class _GenderSelector extends ConsumerWidget {
               onChanged('Laki-laki');
             },
           ),
-          _GenderButton(
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _GenderButton(
             label: 'Perempuan',
             icon: Icons.face_3,
             selected: value == 'Perempuan',
@@ -319,27 +321,8 @@ class _GenderSelector extends ConsumerWidget {
               onChanged('Perempuan');
             },
           ),
-        ];
-
-        if (isNarrow) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              children[0],
-              const SizedBox(height: 10),
-              children[1],
-            ],
-          );
-        }
-
-        return Row(
-          children: [
-            Expanded(child: children[0]),
-            const SizedBox(width: 12),
-            Expanded(child: children[1]),
-          ],
-        );
-      },
+        ),
+      ],
     );
   }
 }

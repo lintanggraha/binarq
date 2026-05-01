@@ -15,7 +15,7 @@ class AudioService {
       'https://actions.google.com/sounds/v1/cartoon/fast_whoosh.ogg';
   static const String _comboUrl =
       'https://actions.google.com/sounds/v1/cartoon/toy_musical_instrument_sparkle.ogg';
-  static const String _quizBgmAsset = 'audio/cheerful_quiz_loop.wav';
+  static const String _quizBgmAsset = 'assets/audio/cheerful_quiz_loop.wav';
   static const double _bgmVolume = 0.26;
 
   bool _isBgmPlaying = false;
