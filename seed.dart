@@ -20,18 +20,21 @@ void main() async {
   final content = await file.readAsString();
   final List<dynamic> questions = jsonDecode(content);
 
-  print('🚀 Memulai proses upload ${questions.length} soal...');
+  print('🚀 Memulai proses upload ${questions.length} soal (dalam batch 100)...');
 
-  for (var q in questions) {
+  final batchSize = 100;
+  for (var i = 0; i < questions.length; i += batchSize) {
+    final end = (i + batchSize < questions.length) ? i + batchSize : questions.length;
+    final batch = questions.sublist(i, end).map((q) => {
+      'id': q['id'],
+      'data_json': q,
+    }).toList();
+
     try {
-      // Menggunakan upsert agar jika id sudah ada, dia akan mereplace (update)
-      await supabase.from('questions').upsert({
-        'id': q['id'],
-        'data_json': q,
-      });
-      print('✅ Berhasil upload: ${q["id"]}');
+      await supabase.from('questions').upsert(batch);
+      print('✅ Berhasil upload batch: ${i + 1} sampai $end');
     } catch (e) {
-      print('❌ Gagal upload ${q["id"]}: $e');
+      print('❌ Gagal upload batch ${i + 1}-$end: $e');
     }
   }
 
