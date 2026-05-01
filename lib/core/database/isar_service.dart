@@ -100,7 +100,7 @@ class IsarService {
     
     // Triple Shield: Pastikan tidak ada keyword keliling/luas untuk kelas 1-2
     if (kelas <= 2) {
-      query = query.filter().not().content((c) => c.pertanyaanContains('keliling', caseSensitive: false))
+      query = query.and().not().content((c) => c.pertanyaanContains('keliling', caseSensitive: false))
                    .and().not().content((c) => c.pertanyaanContains('luas', caseSensitive: false));
     }
     
