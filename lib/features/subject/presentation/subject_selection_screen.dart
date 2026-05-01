@@ -119,6 +119,7 @@ class SubjectSelectionScreen extends ConsumerWidget {
                           ref.read(audioServiceProvider).playButtonClick();
 
                           // Simpan Mapel yang dipilih ke state
+                          ref.read(audioServiceProvider).playWhoosh();
                           ref.read(selectedSubjectProvider.notifier).state =
                               subject['id'];
 

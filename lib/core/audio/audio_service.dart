@@ -11,6 +11,10 @@ class AudioService {
       'https://actions.google.com/sounds/v1/cartoon/pop.ogg';
   static const String _levelUpUrl =
       'https://actions.google.com/sounds/v1/cartoon/magic_chime_chord.ogg';
+  static const String _whooshUrl =
+      'https://actions.google.com/sounds/v1/cartoon/fast_whoosh.ogg';
+  static const String _comboUrl =
+      'https://actions.google.com/sounds/v1/cartoon/toy_musical_instrument_sparkle.ogg';
   static const String _quizBgmAsset = 'audio/cheerful_quiz_loop.wav';
   static const double _bgmVolume = 0.26;
 
@@ -30,6 +34,14 @@ class AudioService {
 
   Future<void> playLevelUp() async {
     await _sfxPlayer.play(UrlSource(_levelUpUrl), volume: 1.0);
+  }
+
+  Future<void> playWhoosh() async {
+    await _sfxPlayer.play(UrlSource(_whooshUrl), volume: 0.4);
+  }
+
+  Future<void> playCombo() async {
+    await _sfxPlayer.play(UrlSource(_comboUrl), volume: 0.8);
   }
 
   Future<void> startBgm() async {

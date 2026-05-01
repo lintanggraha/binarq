@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/audio/audio_service.dart';
@@ -39,6 +40,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
   // Combo
   int _combo = 0;
 
+  // Particles
+  late final AnimationController _particleCtrl;
+
   // Shake for wrong
   late final AnimationController _shakeCtrl;
   late final Animation<double> _shakeAnim;
@@ -61,6 +65,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     _shakeCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 450));
     _shakeAnim = Tween<double>(begin: 0, end: 1).animate(_shakeCtrl);
+
+    _particleCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1500));
   }
 
   @override
@@ -68,10 +75,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     _slideCtrl.dispose();
     _praiseCtrl.dispose();
     _shakeCtrl.dispose();
+    _particleCtrl.dispose();
     super.dispose();
   }
 
   void _triggerNextQuestion() {
+    ref.read(audioServiceProvider).playWhoosh();
     _slideCtrl.forward(from: 0);
     setState(() => _questionKey++);
   }
@@ -79,11 +88,19 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
   void _triggerPraise(bool isCorrect) {
     if (isCorrect) {
       _combo++;
+      if (_combo >= 3) {
+        ref.read(audioServiceProvider).playCombo();
+        HapticFeedback.heavyImpact();
+      } else {
+        HapticFeedback.lightImpact();
+      }
+      
       final idx = min(_combo - 1, _praises.length - 1);
       final text = _combo >= 3
           ? _comboPraises[min(_combo - 3, _comboPraises.length - 1)]
           : _praises[idx % _praises.length];
       setState(() => _praiseText = text);
+      _particleCtrl.forward(from: 0);
       _praiseCtrl.forward(from: 0).then((_) {
         Future.delayed(const Duration(milliseconds: 900), () {
           if (mounted) {
@@ -94,6 +111,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     } else {
       _combo = 0;
       _shakeCtrl.forward(from: 0);
+      HapticFeedback.vibrate();
     }
   }
 
@@ -260,7 +278,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
           ),
 
           // ── Praise Overlay ─────────────────────────────────────────────────
-          if (_praiseText != null)
+          if (_praiseText != null) ...[
+            IgnorePointer(
+              child: _CelebrationParticles(controller: _particleCtrl),
+            ),
             IgnorePointer(
               child: Align(
                 alignment: const Alignment(0, -0.3),
@@ -850,6 +871,51 @@ class _EssayAnswerFieldState extends State<_EssayAnswerField> {
 }
 
 // ─── Background ───────────────────────────────────────────────────────────────
+class _CelebrationParticles extends StatelessWidget {
+  final AnimationController controller;
+  const _CelebrationParticles({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) => CustomPaint(
+        size: MediaQuery.of(context).size,
+        painter: _ParticlePainter(progress: controller.value),
+      ),
+    );
+  }
+}
+
+class _ParticlePainter extends CustomPainter {
+  final double progress;
+  _ParticlePainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress == 0 || progress == 1) return;
+    
+    final rng = Random(123);
+    final center = Offset(size.width / 2, size.height * 0.35);
+    final colors = [AppColors.accent, AppColors.secondary, AppColors.success, Colors.white];
+
+    for (var i = 0; i < 30; i++) {
+      final angle = rng.nextDouble() * 2 * pi;
+      final speed = 100 + rng.nextDouble() * 200;
+      final radius = speed * progress;
+      final opacity = (1.0 - progress).clamp(0.0, 1.0);
+      
+      final pos = center + Offset(cos(angle) * radius, sin(angle) * radius);
+      
+      final paint = Paint()..color = colors[i % colors.length].withValues(alpha: opacity);
+      canvas.drawCircle(pos, 3 + rng.nextDouble() * 4, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ParticlePainter old) => old.progress != progress;
+}
+
 class _QuizBackground extends StatelessWidget {
   final Widget child;
   const _QuizBackground({required this.child});

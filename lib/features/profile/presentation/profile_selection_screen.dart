@@ -92,7 +92,10 @@ class _ProfileSelectionScreenState
                         onAgeChanged: (value) => setState(() => _age = value),
                         onGradeChanged: (value) =>
                             setState(() => _grade = value),
-                        onCancel: () => setState(() => _showForm = false),
+                        onCancel: () {
+                          ref.read(audioServiceProvider).playButtonClick();
+                          setState(() => _showForm = false);
+                        },
                         onSubmit: () {
                           if (!_formKey.currentState!.validate()) return;
 
@@ -104,6 +107,7 @@ class _ProfileSelectionScreenState
                             grade: _grade,
                           );
 
+                          ref.read(audioServiceProvider).playWhoosh();
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
@@ -118,6 +122,7 @@ class _ProfileSelectionScreenState
                         onSelect: (profile) {
                           ref.read(audioServiceProvider).playButtonClick();
                           profileNotifier.selectProfile(profile);
+                          ref.read(audioServiceProvider).playWhoosh();
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
@@ -125,13 +130,16 @@ class _ProfileSelectionScreenState
                             ),
                           );
                         },
-                        onCreate: () => setState(() {
-                          _nameController.clear();
-                          _gender = 'Laki-laki';
-                          _age = 7;
-                          _grade = 1;
-                          _showForm = true;
-                        }),
+                        onCreate: () {
+                          ref.read(audioServiceProvider).playButtonClick();
+                          setState(() {
+                            _nameController.clear();
+                            _gender = 'Laki-laki';
+                            _age = 7;
+                            _grade = 1;
+                            _showForm = true;
+                          });
+                        },
                       ),
                   ],
                 ),
@@ -297,13 +305,19 @@ class _GenderSelector extends StatelessWidget {
             label: 'Laki-laki',
             icon: Icons.face_6,
             selected: value == 'Laki-laki',
-            onTap: () => onChanged('Laki-laki'),
+            onTap: () {
+              ref.read(audioServiceProvider).playButtonClick();
+              onChanged('Laki-laki');
+            },
           ),
           _GenderButton(
             label: 'Perempuan',
             icon: Icons.face_3,
             selected: value == 'Perempuan',
-            onTap: () => onChanged('Perempuan'),
+            onTap: () {
+              ref.read(audioServiceProvider).playButtonClick();
+              onChanged('Perempuan');
+            },
           ),
         ];
 

@@ -70,6 +70,7 @@ class ExamSelectionScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(24),
                       onTap: () {
                         ref.read(audioServiceProvider).playButtonClick();
+                        ref.read(audioServiceProvider).playWhoosh();
                         ref.read(selectedExamCategoryProvider.notifier).state =
                             exam['category'] as String;
 
