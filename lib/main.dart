@@ -124,13 +124,13 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                     ),
                     const SizedBox(height: 12),
                     // Koleksi Medali
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 12,
+                      runSpacing: 8,
                       children: [
                         _MedalBadge(count: activeProfile.goldMedals, color: const Color(0xFFFFD700), label: 'Gold'),
-                        const SizedBox(width: 12),
                         _MedalBadge(count: activeProfile.silverMedals, color: const Color(0xFFC0C0C0), label: 'Silver'),
-                        const SizedBox(width: 12),
                         _MedalBadge(count: activeProfile.bronzeMedals, color: const Color(0xFFCD7F32), label: 'Bronze'),
                       ],
                     ),

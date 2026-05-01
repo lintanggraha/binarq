@@ -129,7 +129,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
     int newCorrectCount = state.correctCount;
 
     if (isBenar) {
-      int reward = currentQuestion.metadata.xpReward;
+      int reward = currentQuestion.metadata.xpReward ?? 10;
       newXp += reward;
       newCorrectCount += 1;
     }
@@ -139,7 +139,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
     if (profileId != null) {
        _repository.saveHistory(QuizHistory.create(
         profileId: profileId!,
-        questionId: currentQuestion.id,
+        questionId: currentQuestion.id.toString(),
         mapel: mapel,
         kategoriUjian: kategoriUjian,
         score: isBenar ? 100 : 0,

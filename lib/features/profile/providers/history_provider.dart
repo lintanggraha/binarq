@@ -1,3 +1,4 @@
+import 'package:isar/isar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/isar_service.dart';
 import '../../quiz/models/quiz_history.dart';
@@ -11,10 +12,11 @@ final historyProvider = FutureProvider<List<QuizHistory>>((ref) async {
   final isarService = ref.read(isarServiceProvider);
   final isar = await isarService.db;
   
-  return await isar.quizHistorys
+  final results = await isar.quizHistorys
       .filter()
       .profileIdEqualTo(profile.id)
       .sortByCompletedAtDesc()
-      .limit(10)
       .findAll();
+      
+  return results.take(10).toList();
 });

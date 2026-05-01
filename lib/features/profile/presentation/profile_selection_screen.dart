@@ -286,7 +286,7 @@ class _ProfileForm extends StatelessWidget {
   }
 }
 
-class _GenderSelector extends StatelessWidget {
+class _GenderSelector extends ConsumerWidget {
   final String value;
   final ValueChanged<String> onChanged;
 
@@ -296,7 +296,7 @@ class _GenderSelector extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isNarrow = constraints.maxWidth < 360;

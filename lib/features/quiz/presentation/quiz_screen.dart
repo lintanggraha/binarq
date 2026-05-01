@@ -993,7 +993,7 @@ class _QuizPatternPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => oldDelegate.subjectId != subjectId;
+  bool shouldRepaint(covariant _QuizPatternPainter oldDelegate) => oldDelegate.subjectId != subjectId;
 }
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
