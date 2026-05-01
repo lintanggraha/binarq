@@ -12,6 +12,7 @@ class AudioService {
   static const String _levelUpUrl =
       'https://actions.google.com/sounds/v1/cartoon/magic_chime_chord.ogg';
   static const String _quizBgmAsset = 'audio/calm_quiz_loop.wav';
+  static const double _bgmVolume = 0.42;
 
   bool _isBgmPlaying = false;
 
@@ -34,21 +35,22 @@ class AudioService {
   Future<void> startBgm() async {
     if (_isBgmPlaying) return;
 
-    _isBgmPlaying = true;
+    await _bgmPlayer.setPlayerMode(PlayerMode.mediaPlayer);
     await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
     await _bgmPlayer.play(AssetSource(_quizBgmAsset), volume: 0);
+    _isBgmPlaying = true;
 
-    for (var step = 1; step <= 8; step++) {
-      await Future.delayed(const Duration(milliseconds: 80));
-      await _bgmPlayer.setVolume(0.02 * step);
+    for (var step = 1; step <= 10; step++) {
+      await Future.delayed(const Duration(milliseconds: 70));
+      await _bgmPlayer.setVolume(_bgmVolume * step / 10);
     }
   }
 
   Future<void> stopBgm() async {
     if (!_isBgmPlaying) return;
 
-    for (var step = 7; step >= 0; step--) {
-      await _bgmPlayer.setVolume(0.02 * step);
+    for (var step = 9; step >= 0; step--) {
+      await _bgmPlayer.setVolume(_bgmVolume * step / 10);
       await Future.delayed(const Duration(milliseconds: 50));
     }
 

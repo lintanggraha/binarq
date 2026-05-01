@@ -99,14 +99,23 @@ class QuizNotifier extends StateNotifier<QuizState> {
 
   void selectAnswer(String answerId) {
     if (state.isAnswerChecked) return; // Kunci jawaban jika sudah dicek
+    if (answerId.trim().isEmpty) {
+      state = state.copyWith(resetAnswer: true);
+      return;
+    }
+
     state = state.copyWith(selectedAnswerId: answerId);
   }
 
   void checkAnswer() {
     if (state.selectedAnswerId == null) return;
 
-    final isBenar =
-        state.currentQuestion?.content.jawabanBenar == state.selectedAnswerId;
+    final currentQuestion = state.currentQuestion;
+    final isIsian = currentQuestion?.content.tipeSoal == 'isian';
+    final isBenar = isIsian
+        ? _normalizeAnswer(currentQuestion?.content.jawabanBenar) ==
+            _normalizeAnswer(state.selectedAnswerId)
+        : currentQuestion?.content.jawabanBenar == state.selectedAnswerId;
 
     int newXp = state.xp;
     int newLives = state.lives;
@@ -155,6 +164,14 @@ class QuizNotifier extends StateNotifier<QuizState> {
       }
     }
   }
+}
+
+String _normalizeAnswer(String? answer) {
+  return (answer ?? '')
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .replaceAll(RegExp(r'[.,!?;:]'), '');
 }
 
 // Provider Global

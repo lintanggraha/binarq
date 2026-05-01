@@ -107,8 +107,19 @@ class QuizScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 40),
 
+                      if (question.content.tipeSoal == 'isian')
+                        _EssayAnswerField(
+                          questionId: question.questionId,
+                          enabled: !quizState.isAnswerChecked,
+                          isChecked: quizState.isAnswerChecked,
+                          isCorrect: quizState.isCorrect,
+                          correctAnswer: question.content.jawabanBenar ?? '',
+                          onChanged: quizNotifier.selectAnswer,
+                        ),
+
                       // Pilihan Jawaban
-                      if (question.content.pilihan != null)
+                      if (question.content.tipeSoal != 'isian' &&
+                          question.content.pilihan != null)
                         ...question.content.pilihan!.map((p) {
                           final isSelected =
                               quizState.selectedAnswerId == p.idPilihan;
@@ -262,6 +273,101 @@ class QuizScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _EssayAnswerField extends StatefulWidget {
+  final String questionId;
+  final bool enabled;
+  final bool isChecked;
+  final bool isCorrect;
+  final String correctAnswer;
+  final ValueChanged<String> onChanged;
+
+  const _EssayAnswerField({
+    required this.questionId,
+    required this.enabled,
+    required this.isChecked,
+    required this.isCorrect,
+    required this.correctAnswer,
+    required this.onChanged,
+  });
+
+  @override
+  State<_EssayAnswerField> createState() => _EssayAnswerFieldState();
+}
+
+class _EssayAnswerFieldState extends State<_EssayAnswerField> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void didUpdateWidget(covariant _EssayAnswerField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.questionId != widget.questionId) {
+      _controller.clear();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = widget.isChecked
+        ? widget.isCorrect
+            ? AppColors.success
+            : AppColors.error
+        : AppColors.primary.withValues(alpha: 0.45);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _controller,
+          enabled: widget.enabled,
+          onChanged: widget.onChanged,
+          textInputAction: TextInputAction.done,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+            hintText: 'Tulis jawaban singkat',
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: borderColor, width: 2),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: borderColor, width: 2),
+            ),
+          ),
+        ),
+        if (widget.isChecked && !widget.isCorrect) ...[
+          const SizedBox(height: 12),
+          Text(
+            'Jawaban benar: ${widget.correctAnswer}',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ],
+      ],
     );
   }
 }
