@@ -87,18 +87,33 @@ class QuizNotifier extends StateNotifier<QuizState> {
 
   Future<void> _loadQuestions() async {
     state = state.copyWith(isLoading: true);
-    // Mengambil soal dari Database Isar berdasarkan Mapel dan Kelas Anak, serta filter history
-    final questions =
-        await _repository.fetchQuestions(mapel, kategoriUjian, kelas, profileId: profileId);
-
-    // Acak soal agar tidak bosan
-    questions.shuffle();
     
-    // Ambil maksimal 15 soal per sesi biar tidak terlalu lama
-    final limitedQuestions = questions.take(15).toList();
+    print('DEBUG: Loading questions for Mapel: $mapel, Kelas: $kelas, Kategori: $kategoriUjian');
+    
+    // Mengambil soal dari Database Isar berdasarkan Mapel dan Kelas Anak, serta filter history
+    final allQuestions = await _repository.fetchQuestions(mapel, kategoriUjian, kelas, profileId: profileId);
+
+    // Pisahkan PG dan Isian
+    final pgQuestions = allQuestions.where((q) => q.content.tipeSoal == 'pilihan_ganda').toList();
+    final isianQuestions = allQuestions.where((q) => q.content.tipeSoal == 'isian').toList();
+
+    print('DEBUG: Found ${pgQuestions.length} PG and ${isianQuestions.length} Isian questions for Kelas $kelas');
+
+    // Acak masing-masing
+    pgQuestions.shuffle();
+    isianQuestions.shuffle();
+
+    // Ambil 25 PG dan 5 Isian (sesuai request)
+    final selectedPG = pgQuestions.take(25).toList();
+    final selectedIsian = isianQuestions.take(5).toList();
+
+    // Gabungkan
+    final finalQuestions = [...selectedPG, ...selectedIsian];
+    
+    print('DEBUG: Final quiz set has ${finalQuestions.length} questions');
 
     state = state.copyWith(
-      questions: limitedQuestions,
+      questions: finalQuestions,
       isLoading: false,
     );
   }

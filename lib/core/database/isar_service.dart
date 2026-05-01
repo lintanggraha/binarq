@@ -106,7 +106,7 @@ class IsarService {
     
     if (excludeIds != null && excludeIds.isNotEmpty) {
       final excludeSet = excludeIds.toSet();
-      return results.where((q) => !excludeSet.contains(q.id)).toList();
+      return results.where((q) => !excludeSet.contains(q.questionId)).toList();
     }
     
     return results;
