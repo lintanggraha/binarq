@@ -50,13 +50,8 @@ class AudioService {
 
     await _bgmPlayer.setPlayerMode(PlayerMode.mediaPlayer);
     await _bgmPlayer.setReleaseMode(ReleaseMode.loop);
-    await _bgmPlayer.play(UrlSource(_quizBgmUrl), volume: 0);
+    await _bgmPlayer.play(AssetSource('audio/cheerful_quiz_loop.wav'), volume: _bgmVolume);
     _isBgmPlaying = true;
-
-    for (var step = 1; step <= 12; step++) {
-      await Future.delayed(const Duration(milliseconds: 90));
-      await _bgmPlayer.setVolume(_bgmVolume * step / 12);
-    }
   }
 
   Future<void> stopBgm() async {
